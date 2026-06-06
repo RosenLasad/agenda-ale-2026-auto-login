@@ -1,0 +1,717 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <title>Agenda - Calendario, Taccuino e Rubrica</title>
+  <meta name="theme-color" content="#4b1e24">
+  <meta name="description" content="Agenda personale con calendario, taccuino, rubrica e sincronizzazione cloud.">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Agenda">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="headerTop">
+        <div class="headLeft">
+          <div class="brandBlock">
+            <h1 class="brandTitle">Agenda: </h1>
+            <div id="todayLine" class="todayLine"></div>
+          </div>
+        </div>
+
+        <div class="actionsBlock">
+          <div class="actions">
+            <button class="btn hidden" id="installBtn" type="button" title="Installa Agenda">Installa</button>
+            <button class="btn iconBtn" id="btnExport" title="Scarica un file JSON con tutti i dati" aria-label="Esporta JSON"><span class="ico">📤</span></button>
+            <span class="btn fileBtn iconBtn" title="Carica un file JSON esportato in precedenza" aria-label="Importa JSON"><span class="ico">⬆️</span><input id="importFile" type="file" accept="application/json">
+            </span>
+            <button class="btn danger iconBtn" id="btnReset" title="Azzera tutto (fa anche un export)" aria-label="Reset"><span class="ico">♻️</span></button>
+            <button class="btn iconBtn" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico">☁️</span></button>
+            <button class="btn" id="loginBtn">Login</button>
+          </div>
+          <div class="cloudSyncStatus" id="cloudSyncStatus" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
+        </div>
+      </div>
+
+      <div class="headerNav">
+        <div class="tabs inlineTabs bookmarkTabs" aria-label="Navigazione principale">
+          <div class="tab active bookmarkTab bookmarkTab--calendar" data-view="calendar" role="button" tabindex="0" aria-label="Calendario" title="Calendario">
+            <span class="tabPin" aria-hidden="true"></span>
+            <span class="tabIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="3.5" y="5" width="17" height="15.5" rx="3"></rect>
+                <path d="M7.5 3.5V7"></path>
+                <path d="M16.5 3.5V7"></path>
+                <path d="M3.5 9H20.5"></path>
+                <path d="M8 12.5H8.01"></path>
+                <path d="M12 12.5H12.01"></path>
+                <path d="M16 12.5H16.01"></path>
+                <path d="M8 16.5H8.01"></path>
+                <path d="M12 16.5H12.01"></path>
+              </svg>
+            </span>
+            <span class="tabText">Calendario</span>
+          </div>
+          <div class="tab bookmarkTab bookmarkTab--notebook" data-view="notebook" role="button" tabindex="0" aria-label="Taccuino" title="Taccuino">
+            <span class="tabPin" aria-hidden="true"></span>
+            <span class="tabIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M7 4.5H18.5C19.6 4.5 20.5 5.4 20.5 6.5V18.5C20.5 19.6 19.6 20.5 18.5 20.5H7"></path>
+                <path d="M7 4.5C5.9 4.5 5 5.4 5 6.5V18.5C5 19.6 5.9 19.6 7 20.5"></path>
+                <path d="M8.5 8H16.5"></path>
+                <path d="M8.5 12H16.5"></path>
+                <path d="M8.5 16H13.5"></path>
+                <path d="M7.5 4.5V20.5"></path>
+              </svg>
+            </span>
+            <span class="tabText">Taccuino</span>
+          </div>
+          <div class="tab bookmarkTab bookmarkTab--contacts" data-view="contacts" role="button" tabindex="0" aria-label="Rubrica" title="Rubrica">
+            <span class="tabPin" aria-hidden="true"></span>
+            <span class="tabIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="4.5" y="3.5" width="15" height="17" rx="3"></rect>
+                <path d="M8 3.5V20.5"></path>
+                <path d="M5 8H8"></path>
+                <path d="M5 12H8"></path>
+                <path d="M5 16H8"></path>
+                <circle cx="14.5" cy="9" r="2.2"></circle>
+                <path d="M11.7 15.8C12.3 14.4 13.5 13.5 14.9 13.5C16.3 13.5 17.5 14.4 18.1 15.8"></path>
+              </svg>
+            </span>
+            <span class="tabText">Rubrica</span>
+          </div>
+          <div class="tab bookmarkTab bookmarkTab--today" data-view="today" role="button" tabindex="0" aria-label="Oggi" title="Oggi">
+            <span class="tabPin" aria-hidden="true"></span>
+            <span class="tabIcon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="12" cy="12" r="6.5"></circle>
+                <path d="M12 2.8V5.2"></path>
+                <path d="M12 18.8V21.2"></path>
+                <path d="M2.8 12H5.2"></path>
+                <path d="M18.8 12H21.2"></path>
+                <path d="M5.4 5.4L7.1 7.1"></path>
+                <path d="M16.9 16.9L18.6 18.6"></path>
+                <path d="M16.9 7.1L18.6 5.4"></path>
+                <path d="M5.4 18.6L7.1 16.9"></path>
+              </svg>
+            </span>
+            <span class="tabText">Oggi</span>
+          </div>
+          <div class="tab bookmarkTab bookmarkTab--actions" data-view="actions" role="button" tabindex="0" aria-label="Azioni" title="Azioni"><span class="tabPin" aria-hidden="true"></span><span class="tabIcon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12.5L9 17.5L20 6.5"></path><path d="M5 4.5H15"></path><path d="M5 8.5H11"></path><path d="M5 20H19"></path></svg></span><span class="tabText">Azioni</span></div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Calendar view -->
+    <section id="view-calendar">
+      <div class="calendarStack">
+        <div class="card agendaWeekCard collapsible" id="agendaWeekCard">
+          <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="agendaWeekBody">
+            <h2>Prossimi 7 giorni</h2>
+            <span class="chev">▾</span>
+          </div>
+          <div class="cardBody" id="agendaWeekBody">
+            <div class="agendaWeekList" id="agendaWeekList"></div>
+          </div>
+        </div>
+
+        <div class="card todoPanelCard">
+          <div class="cardBody">
+            <div id="todoMiniPanel" class="todoMiniPanel">
+              <div class="todoMiniHead">
+                <div id="toggleTodos" class="summaryLink" role="button" tabindex="0" aria-expanded="true" aria-controls="todoMiniBody">
+                  <div class="summaryLinkLabel">
+                    <div class="summaryTitle">Aggiungi nota</div>
+                  </div>
+                  <div class="summaryLinkRight" aria-hidden="true">
+                    <span class="miniChevron">▾</span>
+                  </div>
+                </div>
+                <button class="miniPlusBtn" id="openTodosBtn" type="button" aria-label="Apri Taccuino" title="Apri Taccuino">+</button>
+              </div>
+
+              <div class="todoMiniBody" id="todoMiniBody">
+                <div class="list" id="todoActiveList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card calendarMonthCard">
+          <div class="cardHeader">
+            <h2>Calendario</h2>
+            <div class="calControls">
+              <button class="btn" id="prevMonth" title="Mese precedente">◀</button>
+              <div class="monthTitle" id="monthTitle">—</div>
+              <button class="btn" id="nextMonth" title="Mese successivo">▶</button>
+              <button class="btn primary" id="jumpToday" title="Vai al mese corrente">Oggi</button>
+            </div>
+          </div>
+          <div class="cardBody">
+            <div class="calListGrid" id="calListGrid"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Notebook view -->
+    <section id="view-notebook" class="hidden">
+      <div class="grid">
+        <div class="card notesCard">
+          <div class="cardHeader">
+            <h2>Note rapide</h2>
+          </div>
+          <div class="cardBody notesCardBody">
+
+            <div class="card collapsible collapsed notesEditorCard" id="notesEditorCard" style="box-shadow:none">
+              <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="notesEditorBody">
+                <h2>Scrivi / Modifica nota</h2>
+                <div class="notesHeaderMeta">
+                  <span class="hint" id="notesEditorStatus">Nuova nota</span>
+                  <span class="chev">▾</span>
+                </div>
+              </div>
+              <div class="cardBody" id="notesEditorBody">
+                <div class="field">
+                  <label>Titolo</label>
+                  <input id="quickNoteTitle" type="text" placeholder="Es: Idee, appunti, cose da ricordare...">
+                </div>
+                <div class="field">
+                  <label>Nota</label>
+                  <textarea id="quickNotes" placeholder="Scrivi qui..."></textarea>
+                </div>
+
+                <div class="notesToolbar">
+                  <div class="notesToolbarActions">
+                    <button class="btn primary" id="btnSaveNote" type="button">Salva</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card collapsible notesListCard" id="notesListCard" style="box-shadow:none">
+              <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="notesListBody">
+                <h2>Elenco note</h2>
+                <div class="notesHeaderMeta">
+                  <span class="hint" id="notesCount">Nessuna nota</span>
+                  <button class="btn notesHeaderBtn" id="btnNotesFavorites" type="button" aria-pressed="false">Preferiti</button>
+                  <button class="btn notesHeaderBtn" id="btnOpenNoteEditor" type="button">Nuova</button>
+                  <span class="chev">▾</span>
+                </div>
+              </div>
+              <div class="cardBody" id="notesListBody">
+                <div class="list notesList" id="notesList"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="cardHeader">
+            <h2>Taccuino: Cose da fare</h2>
+          </div>
+          <div class="cardBody todoNotebookBody">
+            <div class="card collapsible collapsed todoAddCard" id="todoAddCard" style="box-shadow:none">
+              <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="todoAddBody">
+                <h2>Aggiungi</h2>
+                <span class="chev">▾</span>
+              </div>
+              <div class="cardBody" id="todoAddBody">
+                <div class="field">
+                  <label>Testo</label>
+                  <input id="todoText" type="text" placeholder="">
+                </div>
+                <div class="row">
+                  <div class="field">
+                    <label>Priorità</label>
+                    <select id="todoPriority">
+                      <option value="med">Media</option>
+                      <option value="high">Alta</option>
+                      <option value="low">Bassa</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label>Tag (opzionale)</label>
+                    <input id="todoTag" type="text" placeholder="">
+                  </div>
+                  <div class="tight">
+                    <button class="btn primary" id="addTodo" style="width:100%">Aggiungi</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="card collapsible todoListCard" id="todoListCard" style="box-shadow:none">
+              <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="todoListBody">
+                <h2>Lista</h2>
+                <div class="todoListMeta">
+                  <span class="hint" id="todoTotalCount"></span>
+                  <span class="chev">▾</span>
+                </div>
+              </div>
+              <div class="cardBody" id="todoListBody">
+                <div class="list" id="todoList"></div>
+
+                <div class="divider"></div>
+
+                <div class="row todoListFiltersRow" style="justify-content:flex-end;">
+                  <input id="todoSearch" type="text" placeholder="Cerca...">
+                  <select id="todoFilter" class="tight" style="max-width:220px">
+                    <option value="all">Tutti</option>
+                    <option value="active">Attivi</option>
+                    <option value="done">Completati</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contacts view -->
+    <section id="view-contacts" class="hidden">
+      <div class="grid gridSingle">
+        <div class="card">
+          <div class="cardHeader">
+            <h2>Rubrica</h2>
+            <button class="btn" id="openContactBtn">+ Aggiungi nuovo</button>
+          </div>
+          <div class="cardBody">
+            <div class="row contactsTools">
+              <div class="field">
+                <label>Cerca contatto</label>
+                <input id="contactSearch" type="text" placeholder="Nome, telefono, email o note...">
+              </div>
+              <div class="field contactsFilterField">
+                <label>Categoria</label>
+                <select id="contactCategoryFilter">
+                  <option value="all">Tutte</option>
+                  <option value="lavoro">Lavoro</option>
+                  <option value="amici">Amici</option>
+                  <option value="famiglia">Famiglia</option>
+                  <option value="clienti">Clienti</option>
+                  <option value="fornitori">Fornitori</option>
+                  <option value="altro">Altro</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="contactsMetaRow">
+              <div class="hint" id="contactsMeta">Nessun contatto salvato.</div>
+            </div>
+
+            <div class="list contactList" id="contactList"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Today view -->
+    <section id="view-today" class="hidden">
+      <div class="todayStack">
+        <div class="card todayHeroCard">
+          <div class="cardBody">
+            <div class="todayHeroTopRow">
+              <button class="smallBtn todayNavBtn" id="todayPrevBtn" type="button" aria-label="Giorno precedente" title="Giorno precedente">&#8592;</button>
+              <div class="todayHeroCenter">
+                <div class="todayHeroKicker" id="todayHeroKicker">Oggi</div>
+                <div class="todayHeroDate" id="todayHeroDate">—</div>
+                <div class="todayHeroSubline" id="todayHeroSubline">Genova · —</div>
+              </div>
+              <button class="smallBtn todayNavBtn" id="todayNextBtn" type="button" aria-label="Giorno successivo" title="Giorno successivo">&#8594;</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card todayAstronomyCard">
+          <div class="cardHeader"><h2>Cielo del giorno</h2></div>
+          <div class="cardBody todayMetaGrid">
+<div class="todayMetaItem todayMetaItem--sun">
+  <span class="todayMetaLabel">Alba / Tramonto</span>
+  <strong id="todaySunrise">—</strong>
+  <strong id="todaySunset">—</strong>
+</div>
+            <div class="todayMetaItem todayMetaItem--full"><span class="todayMetaLabel">Fase lunare</span><strong id="todayMoonPhase">—</strong></div>
+            <div class="todayMetaItem"><span class="todayMetaLabel">Differenza da ieri</span><strong id="todayDayDelta">—</strong></div>
+            <div class="todayMetaItem"><span class="todayMetaLabel">Durata del giorno</span><strong id="todayDayLength">—</strong></div>
+          </div>
+        </div>
+
+        <div class="card todayFeastCard">
+          <div class="cardHeader"><h2>Ricorrenza del giorno</h2></div>
+          <div class="cardBody">
+            <div class="todaySectionTitle" id="todayFeastTitle">—</div>
+            <div class="todaySectionSub" id="todayFeastSubtitle">—</div>
+            <p class="todayText" id="todaySaintBio">—</p>
+            <blockquote class="todayQuote hidden" id="todaySaintQuoteWrap">
+              <p id="todaySaintQuote">—</p>
+            </blockquote>
+            <div class="divider"></div>
+            <div class="todaySectionTitle">Accadde oggi</div>
+            <p class="todayText" id="todayOnThisDay">—</p>
+          </div>
+        </div>
+
+        <div class="card todaySeasonCard">
+          <div class="cardHeader"><h2>Stagione e clima</h2></div>
+          <div class="cardBody">
+            <div class="todaySectionTitle" id="todaySeasonTitle">—</div>
+            <p class="todayText" id="todaySeasonText">—</p>
+            <div class="divider"></div>
+            <div class="todaySectionTitle">Consiglio del giorno</div>
+            <p class="todayText" id="todayPracticalTip">—</p>
+          </div>
+        </div>
+
+        <div class="card todayFoodCard">
+          <div class="cardHeader"><h2>Tavola del giorno</h2></div>
+          <div class="cardBody">
+            <div class="todayFoodList" id="todayFoodList"></div>
+            <p class="todayText" id="todayFoodNote">—</p>
+          </div>
+        </div>
+
+        <div class="card todayProverbCard">
+          <div class="cardHeader"><h2>Voce del giorno</h2></div>
+          <div class="cardBody">
+            <div class="todayProverbOriginal" id="todayProverbOriginal">—</div>
+            <div class="todayProverbTranslation" id="todayProverbTranslation">—</div>
+            <p class="todayText" id="todayProverbNote">—</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Actions view -->
+    <section id="view-actions" class="hidden">
+      <div class="actionsStack">
+        <div class="card actionsHeroCard"><div class="cardBody"><div class="actionsHeroTop"><div><div class="actionsKicker">Obiettivo giornaliero</div><div class="actionsScore"><span id="actionsTodayPoints">0</span> / <span id="actionsDailyGoal">100</span> punti</div><div class="hint" id="actionsMotivation">Completa azioni piccole, ma concrete.</div></div><button class="btn" id="btnResetTodayActions" type="button">Reset oggi</button></div><div class="actionsProgress" aria-hidden="true"><div id="actionsProgressBar"></div></div></div></div>
+        <div class="card actionsReminderCard hidden" id="actionsReminderCard"><div class="cardBody"><div class="actionsReminderText" id="actionsReminderText">Promemoria</div></div></div>
+        <div class="card"><div class="cardHeader"><h2>Azioni disponibili</h2><button class="btn" id="btnOpenActionEditor" type="button">+ Nuova</button></div><div class="cardBody"><div class="actionsFilters row"><select id="actionsFilter"><option value="due">Da fare</option><option value="all">Tutte</option><option value="daily">Quotidiane</option><option value="weekly">Settimanali</option><option value="monthly">Mensili</option></select></div><div class="list actionsList" id="actionsList"></div></div></div>
+        <div class="card collapsible collapsed" id="actionEditorCard"><div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="actionEditorBody"><h2>Aggiungi / modifica azione</h2><span class="chev">▾</span></div><div class="cardBody" id="actionEditorBody"><div class="row"><div class="field"><label>Nome azione</label><input id="actionName" type="text" placeholder="Es: Suonare 20 minuti"></div><div class="field"><label>Categoria</label><select id="actionCadence"><option value="daily">Quotidiana</option><option value="weekly">Settimanale</option><option value="monthly">Mensile</option></select></div></div><div class="row"><div class="field"><label>Punti</label><input id="actionPoints" type="number" min="1" max="999" value="20"></div><div class="field"><label>Durata stimata</label><input id="actionDuration" type="text" placeholder="Es: 30 min, 1 ora, 2 ore"></div><div class="field"><label>Ora promemoria opzionale</label><input id="actionReminder" type="time"></div></div><div class="row"><button class="btn primary" id="btnSaveAction" type="button">Salva azione</button><button class="btn" id="btnCancelActionEdit" type="button">Annulla</button></div><div class="hint">Le settimanali ricompaiono 7 giorni dopo il completamento; le mensili dopo 30 giorni. Se non le fai, restano visibili.</div></div></div>
+      </div>
+    </section>
+
+  </div>
+
+  <!-- Day modal -->
+  <div class="overlay" id="dayOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal">
+      <div class="modalHeader">
+        <h3 id="dayTitle">—</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn primary" id="btnAddEvent">Aggiungi</button>
+          <button class="btn" id="btnCancelEventEdit" type="button" hidden>Annulla</button>
+          <button class="btn" id="btnCloseDay" title="Chiudi (Esc)">Chiudi</button>
+        </div>
+      </div>
+      <div class="modalBody">
+        <div class="card collapsible collapsed" id="addEventCard" style="box-shadow:none">
+          <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="false">
+            <h2 id="addEventTitle">Aggiungi evento</h2>
+            <span class="chev">▾</span>
+          </div>
+          <div class="cardBody">
+            <div class="row">
+              <div class="field">
+                <label>Titolo</label>
+                <input id="evTitle" type="text" placeholder="Es: Riunione / Riprese / Dentista...">
+              </div>
+              <div class="field">
+                <label>Orario (opzionale)</label>
+                <input id="evTime" type="time">
+              </div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>Categoria</label>
+                <select id="evCat">
+                  <option value="work">🔴 Lavoro</option>
+                  <option value="priv">🔵 Privato</option>
+                  <option value="sdac">🟡 SDAC</option>
+                  <option value="other" selected>⚪ Altro</option>
+                </select>
+              </div>
+              <div class="field alarmField">
+                <label class="checkLine"><input id="evAlarmEnabled" type="checkbox"> Sveglia</label>
+                <select id="evAlarmOffset" disabled>
+                  <option value="0">All'orario</option>
+                  <option value="5">5 minuti prima</option>
+                  <option value="15">15 minuti prima</option>
+                  <option value="30">30 minuti prima</option>
+                </select>
+              </div>
+            </div>
+            <div class="alarmTools">
+              <button class="btn" id="btnEnableAlarmAudio" type="button">Attiva suoni / Test</button>
+              <span class="hint" id="alarmStatus">La sveglia usa sound/alarm.mp3 quando Agenda è aperta.</span>
+            </div>
+            <div class="field">
+              <label>Note (opzionale)</label>
+              <textarea id="evNotes" placeholder="Dettagli, indirizzo, contatti..."></textarea>
+            </div>
+            <button class="btn" id="btnPrintDay" title="Stampa eventi del giorno">Stampa</button>
+            <div class="hint" style="margin-top:8px">Ordinati per orario (se c’è), poi inserimento.</div>
+          </div>
+        </div>
+
+        <div class="card collapsible" id="eventsCard" style="box-shadow:none">
+          <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true">
+            <h2>Eventi</h2>
+            <span class="chev">▾</span>
+          </div>
+          <div class="cardBody">
+            <div class="list" id="dayEventsList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Alarm modal -->
+  <div class="overlay alarmOverlay" id="alarmOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal alarmModal">
+      <div class="modalHeader alarmModalHeader">
+        <h3>🔔 Promemoria Agenda</h3>
+      </div>
+      <div class="modalBody alarmModalBody">
+        <div class="alarmTitle" id="alarmTitle">Evento</div>
+        <div class="alarmMeta" id="alarmMeta">—</div>
+        <div class="alarmNotes" id="alarmNotes"></div>
+        <div class="hint alarmAudioHint" id="alarmAudioHint"></div>
+        <div class="alarmActions">
+          <button class="btn primary" id="btnAlarmStop" type="button">Stop</button>
+          <button class="btn" id="btnAlarmSnooze" type="button">Rimanda 5 minuti</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Contact modal -->
+  <div class="overlay" id="contactOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal contactModal">
+      <div class="modalHeader">
+        <h3 id="contactModalTitle">Aggiungi contatto</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn primary" id="saveContactBtn">Salva</button>
+          <button class="btn" id="closeContactBtn" title="Annulla">Annulla</button>
+        </div>
+      </div>
+      <div class="modalBody contactModalBody">
+        <div class="field">
+          <label>Nome</label>
+          <input id="contactName" type="text" placeholder="Nome e cognome">
+        </div>
+        <div class="field">
+          <label>Telefono</label>
+          <input id="contactPhone" type="tel" placeholder="">
+        </div>
+        <div class="field">
+          <label>Email</label>
+          <input id="contactEmail" type="email" placeholder="">
+        </div>
+        <div class="field">
+          <label>Categoria</label>
+          <select id="contactCategory">
+            <option value="lavoro">Lavoro</option>
+            <option value="amici">Amici</option>
+            <option value="famiglia">Famiglia</option>
+            <option value="clienti">Clienti</option>
+            <option value="fornitori">Fornitori</option>
+            <option value="altro" selected>Altro</option>
+          </select>
+        </div>
+        <div class="field contactNotesField">
+          <label>Note / Chi è questa persona</label>
+          <textarea id="contactNotes" placeholder="Es: cliente, amico, fornitore, contesto utile..."></textarea>
+        </div>
+        <div class="hint contactModalHint">I contatti vengono salvati insieme al resto dell’agenda e rientrano anche in export/import.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Account modal -->
+  <div class="overlay" id="accountOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal accountModal">
+      <div class="modalHeader">
+        <h3 id="accountModalTitle">Account Agenda</h3>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="btn" id="closeAccountBtn" type="button" title="Chiudi">Chiudi</button>
+        </div>
+      </div>
+      <div class="modalBody accountModalBody">
+        <div class="accountIntro">
+          <div class="accountIntroTitle">Accedi o crea un account</div>
+          <p class="accountIntroText">Usa Agenda in locale oppure accedi per sincronizzare i dati nel cloud del tuo account.</p>
+        </div>
+
+        <div class="accountStatus hidden" id="accountStatus"></div>
+
+        <div class="accountGuestView" id="accountGuestView">
+          <div class="accountAuthTabs" role="tablist" aria-label="Accesso account">
+            <button class="btn accountTabBtn isActive" id="accountTabLogin" type="button" role="tab" aria-selected="true">Accedi</button>
+            <button class="btn accountTabBtn" id="accountTabSignup" type="button" role="tab" aria-selected="false">Crea account</button>
+          </div>
+
+          <div class="accountPane" id="accountLoginPane">
+            <div class="accountPaneTitle">Accedi</div>
+            <div class="field">
+              <label>Email</label>
+              <input id="accountLoginEmail" type="email" placeholder="nome@email.com" autocomplete="email">
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <div class="passwordInputWrap">
+                <input id="accountLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+                <button class="passwordToggleBtn" id="toggleAccountLoginPassword" type="button" aria-label="Mostra password" aria-pressed="false">👁</button>
+              </div>
+            </div>
+            <div class="accountFormActions">
+              <button class="btn primary" id="btnAccountLogin" type="button">Accedi</button>
+              <button class="btn" id="btnAccountContinueFreeLogin" type="button">Continua gratis</button>
+              <button class="btn" id="btnAccountRecover" type="button">Password dimenticata?</button>
+            </div>
+            <div class="hint">Se non hai ancora un account, puoi crearlo in pochi secondi.</div>
+          </div>
+
+          <div class="accountPane hidden" id="accountSignupPane">
+            <div class="accountPaneTitle">Crea account</div>
+            <div class="field">
+              <label>Email</label>
+              <input id="accountSignupEmail" type="email" placeholder="nome@email.com" autocomplete="email">
+            </div>
+            <div class="field">
+              <label>Password</label>
+              <input id="accountSignupPassword" type="password" placeholder="Scegli una password" autocomplete="new-password">
+            </div>
+            <div class="field">
+              <label>Conferma password</label>
+              <input id="accountSignupPassword2" type="password" placeholder="Ripeti la password" autocomplete="new-password">
+            </div>
+            <div class="accountFormActions">
+              <button class="btn primary" id="btnAccountSignup" type="button">Crea account</button>
+              <button class="btn" id="btnAccountContinueFreeSignup" type="button">Continua gratis</button>
+            </div>
+            <div class="hint">L'account ti permette di sincronizzare Agenda tra più dispositivi.</div>
+          </div>
+        </div>
+
+        <div class="accountUserView hidden" id="accountUserView">
+          <div class="accountPaneTitle">Il tuo account</div>
+          <div class="accountInfoGrid">
+            <div class="accountInfoItem">
+              <span class="accountInfoLabel">Email</span>
+              <strong id="accountUserEmail">—</strong>
+            </div>
+            <div class="accountInfoItem">
+              <span class="accountInfoLabel">Piano</span>
+              <strong id="accountUserPlan">Free</strong>
+            </div>
+            <div class="accountInfoItem">
+              <span class="accountInfoLabel">Sincronizzazione</span>
+              <strong id="accountUserSync">Attiva</strong>
+            </div>
+          </div>
+
+          <div class="accountUserCard" id="accountUserCtaCard">
+            <div class="accountUserCardTitle" id="accountUserCtaTitle">Cloud Agenda</div>
+            <p class="accountUserCardText" id="accountUserCtaText">Sincronizza Agenda nel cloud, usa i tuoi dati su più dispositivi e tieni sempre un backup disponibile.</p>
+            <div class="accountFormActions">
+              <button class="btn primary" id="btnAccountManagePremium" type="button">Gestisci cloud</button>
+              <button class="btn danger" id="btnAccountLogout" type="button">Esci</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="accountPlans">
+          <div class="accountPlanCard">
+            <div class="accountPlanHeader">
+              <div class="accountPlanName">Free</div>
+              <div class="accountPlanPrice">0 €</div>
+            </div>
+            <ul class="accountPlanList">
+              <li>Calendario, Taccuino, Rubrica e Oggi</li>
+              <li>Salvataggio locale sul dispositivo</li>
+              <li>Export/import manuale</li>
+            </ul>
+            <button class="btn" id="btnAccountPlanFree" type="button">Continua gratis</button>
+          </div>
+
+          <div class="accountPlanCard accountPlanCard--premium">
+            <div class="accountPlanHeader">
+              <div class="accountPlanName">Cloud</div>
+              <div class="accountPlanPrice">Account <span>cloud utente</span></div>
+            </div>
+            <ul class="accountPlanList">
+              <li>Salvataggio nel cloud dell'account</li>
+              <li>Sincronizzazione cloud</li>
+              <li>Accesso da più dispositivi</li>
+              <li>Backup e recupero dati</li>
+            </ul>
+            <button class="btn primary" id="btnAccountPlanPremium" type="button">Attiva cloud</button>
+          </div>
+        </div>
+
+        <div class="hint accountPlansHint">Puoi usare Agenda in locale o sincronizzarla con il cloud quando accedi.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Login rapido cloud -->
+  <div class="overlay quickLoginOverlay" id="quickLoginOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal quickLoginModal">
+      <button class="quickLoginClose" id="closeQuickLoginBtn" type="button" aria-label="Chiudi login rapido">×</button>
+      <div class="quickLoginBody">
+        <div class="quickLoginKicker">Cloud Agenda</div>
+        <h3>Se sei già iscritto, fai il Login</h3>
+        <p>Accedi per riattivare subito la sincronizzazione cloud su questo dispositivo.</p>
+
+        <div class="quickLoginStatus hidden" id="quickLoginStatus"></div>
+
+        <div class="field">
+          <label>Email</label>
+          <input id="quickLoginEmail" type="email" placeholder="nome@email.com" autocomplete="email">
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <div class="passwordInputWrap">
+            <input id="quickLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+            <button class="passwordToggleBtn" id="toggleQuickLoginPassword" type="button" aria-label="Mostra password" aria-pressed="false">👁</button>
+          </div>
+        </div>
+
+        <div class="quickLoginActions">
+          <button class="btn primary" id="btnQuickLogin" type="button">Login</button>
+          <button class="btn" id="btnQuickLoginSkip" type="button">Continua senza Cloud</button>
+        </div>
+        <button class="quickLoginFullBtn" id="btnQuickLoginFullAccount" type="button">Apri il pannello account completo</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
+  <script src="oggi/today-data-core.js"></script>
+  <script src="oggi/today-data-2026-04.js"></script>
+  <script src="oggi/today-data-2026-05.js"></script>
+  <script src="oggi/today-data-2026-06.js"></script>
+  <script src="oggi/today-data-2026-07.js"></script>
+  <script src="oggi/today-utils.js"></script>
+  <script src="oggi/today-view.js"></script>
+  <script src="app.js"></script>
+  <script src="actions.js"></script>
+  <script src="account.js"></script>
+</body>
+</html>

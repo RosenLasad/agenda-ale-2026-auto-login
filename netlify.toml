@@ -1,0 +1,13 @@
+[build]
+  functions = "netlify/functions"
+  publish = "."
+
+[[redirects]]
+  from = "/api/agenda"
+  to = "/.netlify/functions/agenda"
+  status = 200
+
+[[redirects]]
+  from = "/api/widget-week"
+  to = "/.netlify/functions/widget-week"
+  status = 200

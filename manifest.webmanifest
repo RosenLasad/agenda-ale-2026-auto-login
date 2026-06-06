@@ -1,0 +1,58 @@
+{
+  "name": "Agenda",
+  "short_name": "Agenda",
+  "description": "Calendario, taccuino e rubrica installabili su desktop e mobile.",
+  "lang": "it",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#2e171b",
+  "theme_color": "#4b1e24",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Prossimi 7 giorni",
+      "short_name": "7 giorni",
+      "description": "Apri Agenda direttamente sul pannello Prossimi 7 giorni.",
+      "url": "/?view=calendar&panel=week",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Oggi",
+      "short_name": "Oggi",
+      "description": "Apri la vista Oggi di Agenda.",
+      "url": "/?view=today",
+      "icons": [
+        {
+          "src": "/icons/icon-192.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

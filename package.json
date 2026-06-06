@@ -1,0 +1,9 @@
+{
+  "name": "agenda-ale-2026",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@netlify/blobs": "^8.0.0",
+    "@netlify/identity": "^1.0.0"
+  }
+}
