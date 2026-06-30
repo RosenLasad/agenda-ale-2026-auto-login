@@ -2879,3 +2879,846 @@ html[data-theme="light"] .cloudSyncStatus[data-state="locked"]{ color:#9a3f46; }
     font-size:23px;
   }
 }
+
+/* ===== Taccuino: editor nota in sovraimpressione ===== */
+.noteEditorOverlay{
+  z-index:70;
+  align-items:center;
+  justify-content:center;
+  padding:18px;
+}
+
+.notesEditorModal{
+  width:min(620px, 100%);
+  max-height:calc(100dvh - 36px);
+  margin:auto;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-sizing:border-box;
+}
+
+.notesEditorModalHeader{
+  align-items:flex-start;
+  gap:14px;
+}
+
+.notesEditorModalHeader > div:first-child{
+  min-width:0;
+}
+
+.notesEditorModalHeader h3{
+  margin-bottom:3px;
+}
+
+.notesModalActions{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+
+.notesEditorModalBody{
+  display:flex;
+  flex-direction:column;
+  grid-template-columns:none;
+  gap:14px;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+}
+
+.notesModalTextField{
+  flex:1 1 auto;
+  min-height:0;
+  display:flex;
+  flex-direction:column;
+}
+
+.notesModalTextField textarea{
+  min-height:360px;
+  flex:1 1 auto;
+  resize:vertical;
+}
+
+.notesEditorDirtyHint{
+  min-height:18px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:rgba(255,255,255,.06);
+  border:1px solid rgba(255,255,255,.08);
+}
+
+.notesEditorDirtyHint.isWarning{
+  color:var(--accent-strong);
+  border-color:rgba(176,138,74,.38);
+  background:rgba(176,138,74,.12);
+}
+
+@media (max-width:640px){
+  .noteEditorOverlay{
+    align-items:flex-start;
+    padding:20px;
+  }
+
+  .notesEditorModal{
+    width:100%;
+    max-height:calc(100dvh - 32px);
+  }
+
+  .notesEditorModalHeader{
+    flex-direction:column;
+    align-items:stretch;
+  }
+
+  .notesModalActions{
+    width:100%;
+    justify-content:stretch;
+  }
+
+  .notesModalActions .btn{
+    flex:1 1 0;
+    justify-content:center;
+  }
+
+  .notesModalTextField textarea{
+    min-height:300px;
+  }
+}
+
+
+/* ===== Taccuino: elenco note compatto a card ===== */
+.notesList{
+  display:grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:10px;
+  align-items:stretch;
+}
+
+.notesList .emptyState{
+  grid-column: 1 / -1;
+}
+
+.noteItem{
+  position:relative;
+  min-height:112px;
+  padding:12px 42px 12px 36px;
+  gap:8px;
+  align-items:stretch;
+  cursor:pointer;
+  overflow:hidden;
+  touch-action: manipulation;
+  transition: transform .12s ease, box-shadow .16s ease, border-color .16s ease, background .16s ease;
+}
+
+.noteItem:hover{
+  border-color:rgba(106,37,48,.42);
+  box-shadow:0 12px 24px rgba(45,18,22,.13);
+}
+
+.noteItem.active{
+  border-color:rgba(106,37,48,.58);
+  box-shadow:0 0 0 2px rgba(106,37,48,.08), var(--shadow-soft);
+}
+
+.noteItem.isDragging{
+  opacity:.92;
+  transform:scale(.985);
+  z-index:3;
+  box-shadow:0 18px 32px rgba(45,18,22,.22);
+}
+
+.notesListDragging .noteItem{
+  user-select:none;
+}
+
+.noteDragHandle{
+  position:absolute;
+  left:7px;
+  top:50%;
+  transform:translateY(-50%);
+  width:23px;
+  height:52px;
+  border:1px solid rgba(176,138,74,.34);
+  border-radius:12px;
+  background:rgba(255,255,255,.34);
+  color:rgba(106,37,48,.78);
+  font:700 17px/1 var(--sans);
+  letter-spacing:-6px;
+  padding:0 5px 0 0;
+  cursor:grab;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  touch-action:none;
+}
+
+.noteDragHandle:active,
+.noteItem.isDragging .noteDragHandle{
+  cursor:grabbing;
+  background:rgba(176,138,74,.16);
+}
+
+.noteItemMain{
+  min-width:0;
+  width:100%;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+}
+
+.noteItemTitleRow{
+  display:flex;
+  align-items:flex-start;
+  gap:7px;
+  min-width:0;
+}
+
+.noteItemTitle{
+  flex:1 1 auto;
+  min-width:0;
+  color:var(--text);
+  font-weight:800;
+  font-size:14px;
+  line-height:1.22;
+  overflow:hidden;
+  display:-webkit-box;
+  -webkit-line-clamp:2;
+  -webkit-box-orient:vertical;
+}
+
+.noteItemPreview{
+  color:var(--muted);
+  font-size:12px;
+  line-height:1.35;
+  min-height:16px;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  padding-right:2px;
+}
+
+.noteColorChip{
+  flex:0 0 auto;
+  max-width:58px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:10px;
+  font-weight:700;
+  line-height:1;
+  padding:4px 6px;
+  border-radius:999px;
+  border:1px solid rgba(176,138,74,.28);
+  background:rgba(255,255,255,.32);
+  color:rgba(106,37,48,.86);
+}
+
+.noteItemCorner{
+  position:absolute;
+  right:7px;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  z-index:2;
+}
+
+.noteItemCornerTop{ top:7px; }
+.noteItemCornerBottom{ bottom:7px; }
+
+.noteActionBtn{
+  width:29px;
+  height:29px;
+  padding:0;
+  border-radius:10px;
+  font-size:15px;
+  line-height:1;
+}
+
+.noteActionBtn.isActive{
+  color:#fff7e7;
+  border-color:rgba(106,37,48,.68);
+  background:linear-gradient(180deg, rgba(123,50,64,.98), rgba(75,30,36,.98));
+}
+
+.noteActionBtn.danger{
+  font-size:13px;
+}
+
+.noteColor--cream{ background:linear-gradient(180deg, rgba(255,252,244,.78), rgba(245,236,217,.42)); }
+.noteColor--blush{ background:linear-gradient(180deg, rgba(255,237,235,.78), rgba(238,198,199,.36)); }
+.noteColor--sage{ background:linear-gradient(180deg, rgba(232,244,224,.78), rgba(198,221,187,.36)); }
+.noteColor--sky{ background:linear-gradient(180deg, rgba(225,239,250,.78), rgba(185,211,229,.36)); }
+.noteColor--gold{ background:linear-gradient(180deg, rgba(255,243,202,.82), rgba(230,199,116,.34)); }
+
+.notesEditorBottomRow{
+  display:flex;
+  justify-content:flex-end;
+  align-items:flex-end;
+  gap:10px;
+}
+
+.notesModalColorField{
+  width:min(220px, 100%);
+  margin:0;
+}
+
+@media (max-width:760px){
+  .notesList{
+    grid-template-columns:1fr;
+  }
+
+  .noteItem{
+    min-height:100px;
+    padding-top:11px;
+    padding-bottom:11px;
+  }
+}
+
+@media (max-width:420px){
+  .noteItem{
+    padding-right:39px;
+    padding-left:34px;
+  }
+
+  .noteColorChip{
+    display:none;
+  }
+
+  .noteDragHandle{
+    left:6px;
+    width:22px;
+    height:48px;
+  }
+}
+
+/* Fix card compatte: layout orizzontale con maniglia laterale */
+.noteItem{
+  flex-direction:row;
+}
+
+
+/* ===== Aggiornamento Note: card compatte + palette colore visiva ===== */
+.noteColorChip{
+  display:none !important;
+}
+
+.notesList{
+  display:grid !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap:8px;
+  align-items:stretch;
+}
+
+.noteItem{
+  min-height:76px;
+  padding:9px 36px 9px 32px;
+}
+
+.noteItemTitleRow{
+  gap:0;
+}
+
+.noteItemTitle{
+  font-size:13px;
+  line-height:1.18;
+  -webkit-line-clamp:2;
+}
+
+.noteItemPreview{
+  margin-top:2px;
+  font-size:11px;
+  line-height:1.25;
+  min-height:14px;
+  max-width:100%;
+}
+
+.noteDragHandle{
+  left:5px;
+  width:22px;
+  height:42px;
+  font-size:14px;
+}
+
+.noteItemCorner{
+  right:5px;
+  gap:5px;
+}
+
+.noteItemCornerTop{ top:5px; }
+.noteItemCornerBottom{ bottom:5px; }
+
+.noteActionBtn{
+  width:25px;
+  height:25px;
+  min-width:25px;
+  border-radius:8px;
+  font-size:13px;
+}
+
+.noteActionBtn.danger{
+  font-size:12px;
+}
+
+.noteColor--custom{
+  border-left:4px solid rgba(106,37,48,.46);
+}
+
+.notesEditorBottomRow{
+  justify-content:flex-start;
+}
+
+.notesModalColorField{
+  width:100%;
+}
+
+.noteColorPalette{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+}
+
+.noteColorChoice{
+  border:1px solid rgba(176,138,74,.35);
+  background:linear-gradient(180deg, rgba(255,249,238,.95), rgba(234,221,193,.95));
+  color:var(--text);
+  padding:7px 9px;
+  border-radius:12px;
+  cursor:pointer;
+  font:inherit;
+  font-size:12px;
+  line-height:1;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  min-height:32px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72), 0 3px 10px rgba(45,18,22,.08);
+  -webkit-tap-highlight-color:transparent;
+}
+
+.noteColorChoice:hover{
+  border-color:rgba(106,37,48,.48);
+  background:linear-gradient(180deg, rgba(255,252,245,1), rgba(239,228,204,1));
+}
+
+.noteColorChoice.isSelected{
+  border-color:rgba(106,37,48,.72);
+  box-shadow:0 0 0 2px rgba(106,37,48,.12), inset 0 1px 0 rgba(255,255,255,.74);
+  font-weight:700;
+}
+
+.noteColorSwatch{
+  width:18px;
+  height:18px;
+  border-radius:6px;
+  border:1px solid rgba(80,51,29,.22);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.5);
+  flex:0 0 auto;
+}
+
+.noteColorSwatch--cream{ background:#f3ebd8; }
+.noteColorSwatch--blush{ background:#f0c6c7; }
+.noteColorSwatch--sage{ background:#c6ddbb; }
+.noteColorSwatch--sky{ background:#b9d3e5; }
+.noteColorSwatch--gold{ background:#e6c774; }
+.noteColorSwatch--custom{ background:#d8a04f; }
+
+.noteColorPicker{
+  width:1px;
+  height:1px;
+  opacity:0;
+  position:absolute;
+  pointer-events:none;
+}
+
+@media (max-width:760px){
+  .notesList{
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap:7px;
+  }
+
+  .noteItem{
+    min-height:72px;
+    padding:8px 32px 8px 28px;
+  }
+
+  .noteItemTitle{
+    font-size:12px;
+    line-height:1.15;
+    -webkit-line-clamp:2;
+  }
+
+  .noteItemPreview{
+    font-size:10.5px;
+  }
+
+  .noteDragHandle{
+    left:4px;
+    width:20px;
+    height:38px;
+  }
+
+  .noteActionBtn{
+    width:23px;
+    height:23px;
+    min-width:23px;
+    border-radius:8px;
+    font-size:12px;
+  }
+
+  .noteColorChoice{
+    flex:1 1 calc(50% - 8px);
+    justify-content:flex-start;
+  }
+}
+
+@media (max-width:340px){
+  .notesList{
+    grid-template-columns:1fr !important;
+  }
+
+  .noteItem{
+    min-height:72px;
+  }
+}
+
+
+/* ===== Note: titolo più leggibile + menu colore a tendina ===== */
+.noteItem{
+  min-height:72px;
+  padding:8px 34px 7px 30px;
+}
+
+.noteItemMain{
+  justify-content:center;
+  gap:3px;
+}
+
+.noteItemTitle{
+  font-size:15px;
+  line-height:1.16;
+  font-weight:800;
+}
+
+.noteItemPreview{
+  margin-top:4px;
+  font-size:11.5px;
+  line-height:1.18;
+  min-height:0;
+}
+
+.notesEditorBottomRow{
+  justify-content:flex-end;
+  align-items:flex-end;
+}
+
+.notesModalColorField{
+  width:min(250px, 100%);
+  margin-left:auto;
+  position:relative;
+}
+
+.noteColorDropdown{
+  position:relative;
+  width:100%;
+}
+
+.noteColorDropdownButton{
+  width:100%;
+  min-height:39px;
+  border:1px solid rgba(176,138,74,.35);
+  background:linear-gradient(180deg, rgba(255,249,238,.98), rgba(234,221,193,.98));
+  color:var(--text);
+  padding:8px 10px;
+  border-radius:12px;
+  cursor:pointer;
+  font:inherit;
+  font-size:13px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:8px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.72), 0 3px 10px rgba(45,18,22,.08);
+  -webkit-tap-highlight-color:transparent;
+}
+
+.noteColorDropdownButton:hover,
+.noteColorDropdown.isOpen .noteColorDropdownButton{
+  border-color:rgba(106,37,48,.54);
+  background:linear-gradient(180deg, rgba(255,252,245,1), rgba(239,228,204,1));
+}
+
+.noteColorCurrentLabel{
+  flex:1 1 auto;
+  min-width:0;
+  text-align:left;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+}
+
+.noteColorDropdownChevron{
+  flex:0 0 auto;
+  color:var(--muted);
+  font-size:12px;
+  transition:transform .14s ease;
+}
+
+.noteColorDropdown.isOpen .noteColorDropdownChevron{
+  transform:rotate(180deg);
+}
+
+.noteColorDropdownMenu{
+  position:absolute;
+  right:0;
+  bottom:calc(100% + 7px);
+  width:min(260px, calc(100vw - 34px));
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+  padding:7px;
+  border:1px solid rgba(176,138,74,.42);
+  border-radius:14px;
+  background:linear-gradient(180deg, rgba(255,250,240,.99), rgba(238,226,201,.99));
+  box-shadow:0 16px 34px rgba(45,18,22,.22);
+  z-index:80;
+}
+
+.noteColorDropdownMenu[hidden]{
+  display:none !important;
+}
+
+.noteColorOption{
+  width:100%;
+  border:1px solid transparent;
+  background:transparent;
+  color:var(--text);
+  border-radius:10px;
+  padding:8px 9px;
+  cursor:pointer;
+  font:inherit;
+  font-size:13px;
+  line-height:1;
+  display:flex;
+  align-items:center;
+  gap:8px;
+  text-align:left;
+}
+
+.noteColorOption:hover,
+.noteColorOption:focus-visible{
+  outline:none;
+  border-color:rgba(176,138,74,.32);
+  background:rgba(255,255,255,.42);
+}
+
+.noteColorOption.isSelected{
+  border-color:rgba(106,37,48,.48);
+  background:rgba(106,37,48,.08);
+  font-weight:700;
+}
+
+.noteColorDropdown .noteColorSwatch{
+  width:19px;
+  height:19px;
+  border-radius:6px;
+  border:1px solid rgba(80,51,29,.24);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.55);
+  flex:0 0 auto;
+}
+
+.noteColorPicker{
+  width:1px;
+  height:1px;
+  opacity:0;
+  position:fixed;
+  left:12px;
+  top:12px;
+  right:auto;
+  bottom:auto;
+  pointer-events:none;
+  z-index:9999;
+}
+
+@media (max-width:760px){
+  .noteItem{
+    min-height:70px;
+    padding:8px 31px 7px 28px;
+  }
+
+  .noteItemTitle{
+    font-size:14px;
+    line-height:1.13;
+  }
+
+  .noteItemPreview{
+    margin-top:5px;
+    font-size:11px;
+    line-height:1.12;
+  }
+
+  .notesModalColorField{
+    width:min(240px, 100%);
+  }
+}
+
+@media (max-width:340px){
+  .noteItemTitle{
+    font-size:14px;
+  }
+}
+
+/* Segnalibri: mantieni il colore originale anche in hover */
+.bookmarkTab--calendar:hover{
+  background: linear-gradient(180deg, rgba(121,49,61,.98), rgba(80,30,39,.98));
+}
+
+.bookmarkTab--notebook:hover{
+  background: linear-gradient(180deg, rgba(49,82,68,.98), rgba(31,58,47,.98));
+}
+
+.bookmarkTab--contacts:hover{
+  background: linear-gradient(180deg, rgba(147,104,56,.98), rgba(115,79,41,.98));
+}
+
+.bookmarkTab--today:hover{
+  background: linear-gradient(180deg, rgba(69,88,141,.98), rgba(42,55,96,.98));
+}
+
+/* Segnalibri: mantieni il colore originale anche quando sono selezionati */
+.bookmarkTab--calendar.active,
+.bookmarkTab--calendar.active:hover{
+  background: linear-gradient(180deg, rgba(121,49,61,.98), rgba(80,30,39,.98));
+}
+
+.bookmarkTab--notebook.active,
+.bookmarkTab--notebook.active:hover{
+  background: linear-gradient(180deg, rgba(49,82,68,.98), rgba(31,58,47,.98));
+}
+
+.bookmarkTab--contacts.active,
+.bookmarkTab--contacts.active:hover{
+  background: linear-gradient(180deg, rgba(147,104,56,.98), rgba(115,79,41,.98));
+}
+
+.bookmarkTab--today.active,
+.bookmarkTab--today.active:hover{
+  background: linear-gradient(180deg, rgba(69,88,141,.98), rgba(42,55,96,.98));
+}
+
+.bookmarkTab--actions{
+  background: linear-gradient(180deg, rgba(95,72,104,.98), rgba(65,48,76,.98));
+  border-color: rgba(176,138,74,.36);
+}
+
+.bookmarkTab--actions:hover,
+.bookmarkTab--actions.active,
+.bookmarkTab--actions.active:hover{
+  background: linear-gradient(180deg, rgba(95,72,104,.98), rgba(65,48,76,.98));
+}
+
+/* ===== Calendario: vetrina Note preferite ===== */
+.favoriteNotesHeaderMeta{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+
+.favoriteNotesCard .cardBody{
+  background: linear-gradient(180deg, rgba(255,255,255,.26), rgba(255,255,255,.08));
+}
+
+.favoriteNotesPreviewList{
+  display:grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap:8px;
+  margin-top:0;
+}
+
+.favoriteNotePreviewCard{
+  min-width:0;
+  min-height:64px;
+  padding:9px 10px;
+  border:1px solid rgba(176,138,74,.24);
+  border-left:4px solid rgba(176,138,74,.55);
+  border-radius:12px;
+  cursor:pointer;
+  box-shadow:var(--shadow-soft);
+  transition:transform .12s ease, box-shadow .16s ease, border-color .16s ease, filter .16s ease;
+  overflow:hidden;
+}
+
+.favoriteNotePreviewCard:hover{
+  transform:translateY(-1px);
+  border-color:rgba(106,37,48,.42);
+  box-shadow:0 12px 24px rgba(45,18,22,.13);
+  filter:brightness(1.01);
+}
+
+.favoriteNotePreviewCard:active{
+  transform:translateY(0);
+}
+
+.favoriteNotePreviewCard:focus-visible{
+  outline:none;
+  border-color:rgba(106,37,48,.62);
+  box-shadow:0 0 0 3px rgba(106,37,48,.12), var(--shadow-soft);
+}
+
+.favoriteNotePreviewTitle{
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-size:14px;
+  line-height:1.15;
+  font-weight:800;
+  color:var(--text);
+}
+
+.favoriteNotePreviewText{
+  margin-top:5px;
+  min-width:0;
+  overflow:hidden;
+  white-space:nowrap;
+  text-overflow:ellipsis;
+  font-size:11px;
+  line-height:1.2;
+  color:var(--muted);
+}
+
+.favoriteNotesEmpty{
+  grid-column:1 / -1;
+  border:1px dashed rgba(176,138,74,.34);
+  border-radius:14px;
+  padding:12px;
+  color:var(--muted);
+  background:rgba(255,255,255,.24);
+  font-size:13px;
+}
+
+@media (max-width:760px){
+  .favoriteNotesPreviewList{
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .favoriteNotePreviewCard{
+    min-height:60px;
+    padding:8px 9px;
+  }
+
+  .favoriteNotePreviewTitle{
+    font-size:13px;
+  }
+}
+
+@media (max-width:340px){
+  .favoriteNotesPreviewList{
+    grid-template-columns:1fr;
+  }
+}
