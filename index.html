@@ -116,6 +116,19 @@
     <!-- Calendar view -->
     <section id="view-calendar">
       <div class="calendarStack">
+        <div class="card favoriteNotesCard collapsible" id="favoriteNotesCard">
+          <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="favoriteNotesBody">
+            <h2>Note preferite</h2>
+            <div class="favoriteNotesHeaderMeta">
+              <span class="hint" id="favoriteNotesCount">Nessuna preferita</span>
+              <span class="chev">▾</span>
+            </div>
+          </div>
+          <div class="cardBody" id="favoriteNotesBody">
+            <div class="favoriteNotesPreviewList" id="favoriteNotesPreviewList"></div>
+          </div>
+        </div>
+
         <div class="card agendaWeekCard collapsible" id="agendaWeekCard">
           <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="agendaWeekBody">
             <h2>Prossimi 7 giorni</h2>
@@ -173,32 +186,6 @@
             <h2>Note rapide</h2>
           </div>
           <div class="cardBody notesCardBody">
-
-            <div class="card collapsible collapsed notesEditorCard" id="notesEditorCard" style="box-shadow:none">
-              <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="false" aria-controls="notesEditorBody">
-                <h2>Scrivi / Modifica nota</h2>
-                <div class="notesHeaderMeta">
-                  <span class="hint" id="notesEditorStatus">Nuova nota</span>
-                  <span class="chev">▾</span>
-                </div>
-              </div>
-              <div class="cardBody" id="notesEditorBody">
-                <div class="field">
-                  <label>Titolo</label>
-                  <input id="quickNoteTitle" type="text" placeholder="Es: Idee, appunti, cose da ricordare...">
-                </div>
-                <div class="field">
-                  <label>Nota</label>
-                  <textarea id="quickNotes" placeholder="Scrivi qui..."></textarea>
-                </div>
-
-                <div class="notesToolbar">
-                  <div class="notesToolbarActions">
-                    <button class="btn primary" id="btnSaveNote" type="button">Salva</button>
-                  </div>
-                </div>
-              </div>
-            </div>
 
             <div class="card collapsible notesListCard" id="notesListCard" style="box-shadow:none">
               <div class="cardHeader collapsibleHeader" role="button" tabindex="0" aria-expanded="true" aria-controls="notesListBody">
@@ -404,6 +391,73 @@
       </div>
     </section>
 
+  </div>
+
+  <!-- Note editor modal -->
+  <div class="overlay noteEditorOverlay" id="noteEditorOverlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="modal notesEditorModal" id="notesEditorCard">
+      <div class="modalHeader notesEditorModalHeader">
+        <div>
+          <h3>Scrivi / Modifica nota</h3>
+          <div class="hint" id="notesEditorStatus">Nuova nota</div>
+        </div>
+        <div class="notesModalActions">
+          <button class="btn primary" id="btnSaveNote" type="button">Salva</button>
+          <button class="btn" id="btnCancelNoteEdit" type="button">Annulla</button>
+          <button class="btn" id="btnCloseNoteEditor" type="button">Chiudi</button>
+        </div>
+      </div>
+      <div class="modalBody notesEditorModalBody" id="notesEditorBody">
+        <div class="field">
+          <label>Titolo</label>
+          <input id="quickNoteTitle" type="text" placeholder="Es: Idee, appunti, cose da ricordare...">
+        </div>
+        <div class="field notesModalTextField">
+          <label>Nota</label>
+          <textarea id="quickNotes" placeholder="Scrivi qui..."></textarea>
+        </div>
+        <div class="notesEditorBottomRow">
+          <div class="field notesModalColorField">
+            <label>Colore nota</label>
+            <div class="noteColorDropdown" id="noteColorDropdown">
+              <button class="noteColorDropdownButton" id="noteColorDropdownButton" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span class="noteColorSwatch noteColorSwatch--cream" id="noteColorCurrentSwatch" aria-hidden="true"></span>
+                <span class="noteColorCurrentLabel" id="noteColorCurrentLabel">Crema</span>
+                <span class="noteColorDropdownChevron" aria-hidden="true">▾</span>
+              </button>
+              <div class="noteColorDropdownMenu" id="noteColorDropdownMenu" role="listbox" hidden>
+                <button class="noteColorOption" type="button" data-note-color="cream" role="option" aria-selected="false">
+                  <span class="noteColorSwatch noteColorSwatch--cream" aria-hidden="true"></span>
+                  <span>Crema</span>
+                </button>
+                <button class="noteColorOption" type="button" data-note-color="blush" role="option" aria-selected="false">
+                  <span class="noteColorSwatch noteColorSwatch--blush" aria-hidden="true"></span>
+                  <span>Rosa</span>
+                </button>
+                <button class="noteColorOption" type="button" data-note-color="sage" role="option" aria-selected="false">
+                  <span class="noteColorSwatch noteColorSwatch--sage" aria-hidden="true"></span>
+                  <span>Salvia</span>
+                </button>
+                <button class="noteColorOption" type="button" data-note-color="sky" role="option" aria-selected="false">
+                  <span class="noteColorSwatch noteColorSwatch--sky" aria-hidden="true"></span>
+                  <span>Azzurro</span>
+                </button>
+                <button class="noteColorOption" type="button" data-note-color="gold" role="option" aria-selected="false">
+                  <span class="noteColorSwatch noteColorSwatch--gold" aria-hidden="true"></span>
+                  <span>Oro</span>
+                </button>
+                <button class="noteColorOption noteColorOption--custom" type="button" data-note-color="custom" role="option" aria-selected="false">
+                  <span class="noteColorSwatch noteColorSwatch--custom" id="quickNoteCustomSwatch" aria-hidden="true"></span>
+                  <span>Personalizzato</span>
+                </button>
+              </div>
+              <input id="quickNoteColorCustom" class="noteColorPicker" type="color" value="#f3ebd8" aria-label="Scegli colore personalizzato" tabindex="-1" aria-hidden="true">
+            </div>
+          </div>
+        </div>
+        <div class="hint notesEditorDirtyHint" id="notesEditorDirtyHint" aria-live="polite"></div>
+      </div>
+    </div>
   </div>
 
   <!-- Day modal -->
