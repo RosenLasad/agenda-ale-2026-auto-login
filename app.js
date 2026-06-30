@@ -31,6 +31,14 @@
       gold: "Oro"
     };
     var NOTE_COLOR_ORDER = ["cream","blush","sage","sky","gold"];
+    var NOTE_COLOR_HEX = {
+      cream: "#f3ebd8",
+      blush: "#f0c6c7",
+      sage: "#c6ddbb",
+      sky: "#b9d3e5",
+      gold: "#e6c774"
+    };
+    var DEFAULT_CUSTOM_NOTE_COLOR = "#d8a04f";
 
 
     function $(sel){ return document.querySelector(sel); }
@@ -165,13 +173,46 @@
       return CONTACT_CATEGORY_LABELS[normalizeContactCategory(value)] || "Altro";
     }
 
+    function normalizeHexColor(value){
+      var raw = String(value || "").trim().toLowerCase();
+      if(/^#[0-9a-f]{3}$/.test(raw)){
+        return "#" + raw.charAt(1) + raw.charAt(1) + raw.charAt(2) + raw.charAt(2) + raw.charAt(3) + raw.charAt(3);
+      }
+      if(/^#[0-9a-f]{6}$/.test(raw)) return raw;
+      return "";
+    }
+
+    function isCustomNoteColor(value){
+      return !!normalizeHexColor(value);
+    }
+
     function normalizeNoteColor(value){
       var raw = String(value || "").trim().toLowerCase();
-      return NOTE_COLOR_LABELS[raw] ? raw : "cream";
+      if(NOTE_COLOR_LABELS[raw]) return raw;
+      var hex = normalizeHexColor(raw);
+      if(hex) return hex;
+      return "cream";
     }
 
     function noteColorLabel(value){
-      return NOTE_COLOR_LABELS[normalizeNoteColor(value)] || "Crema";
+      var normalized = normalizeNoteColor(value);
+      return isCustomNoteColor(normalized) ? "Personalizzato" : (NOTE_COLOR_LABELS[normalized] || "Crema");
+    }
+
+    function getNoteColorHex(value){
+      var normalized = normalizeNoteColor(value);
+      return isCustomNoteColor(normalized) ? normalized : (NOTE_COLOR_HEX[normalized] || NOTE_COLOR_HEX.cream);
+    }
+
+    function noteColorClass(value){
+      var normalized = normalizeNoteColor(value);
+      return isCustomNoteColor(normalized) ? "noteColor--custom" : "noteColor--" + normalized;
+    }
+
+    function buildCustomNoteBackground(value){
+      var hex = normalizeHexColor(value);
+      if(!hex) return "";
+      return "linear-gradient(180deg, color-mix(in srgb, " + hex + " 34%, white 66%), color-mix(in srgb, " + hex + " 22%, white 78%))";
     }
 
     function createImportedLegacyNote(text){
@@ -209,6 +250,7 @@
         currentId: null,
         draftTitle: "",
         draftBody: "",
+        draftColor: "cream",
         listOpen: true,
         editorOpen: false,
         favoritesOnly: false
@@ -222,6 +264,7 @@
           base.currentId = imported.id;
           base.draftTitle = imported.title;
           base.draftBody = imported.body;
+          base.draftColor = imported.color;
           base.listOpen = true;
           base.editorOpen = false;
         }
@@ -239,6 +282,7 @@
       var currentId = raw.currentId && items.some(function(item){ return item.id === raw.currentId; }) ? raw.currentId : null;
       var draftTitle = typeof raw.draftTitle === "string" ? raw.draftTitle : "";
       var draftBody = typeof raw.draftBody === "string" ? raw.draftBody : "";
+      var draftColor = normalizeNoteColor(raw.draftColor);
       var listOpen = raw.listOpen !== false;
       var editorOpen = !!raw.editorOpen;
       var favoritesOnly = !!raw.favoritesOnly;
@@ -248,7 +292,13 @@
         if(current){
           draftTitle = current.title || "";
           draftBody = current.body || "";
+          draftColor = normalizeNoteColor(current.color);
         }
+      }
+
+      if(currentId && raw.draftColor === undefined){
+        var currentColorNote = items.find(function(item){ return item.id === currentId; }) || null;
+        if(currentColorNote) draftColor = normalizeNoteColor(currentColorNote.color);
       }
 
       return {
@@ -256,6 +306,7 @@
         currentId: currentId,
         draftTitle: draftTitle,
         draftBody: draftBody,
+        draftColor: draftColor,
         listOpen: listOpen,
         editorOpen: editorOpen,
         favoritesOnly: favoritesOnly
@@ -671,6 +722,9 @@
     var storageStatus = $("#storageStatus");
     var cloudSyncStatus = $("#cloudSyncStatus");
     var btnCloudRefresh = $("#btnCloudRefresh");
+    var favoriteNotesCard = $("#favoriteNotesCard");
+    var favoriteNotesPreviewList = $("#favoriteNotesPreviewList");
+    var favoriteNotesCount = $("#favoriteNotesCount");
     var agendaWeekCard = $("#agendaWeekCard");
     var todoMiniPanel = $("#todoMiniPanel");
     var toggleTodos = $("#toggleTodos");
@@ -694,14 +748,29 @@
 
     var quickNoteTitle = $("#quickNoteTitle");
     var quickNotes = $("#quickNotes");
+    var noteColorDropdown = $("#noteColorDropdown");
+    var noteColorDropdownButton = $("#noteColorDropdownButton");
+    var noteColorDropdownMenu = $("#noteColorDropdownMenu");
+    var noteColorCurrentSwatch = $("#noteColorCurrentSwatch");
+    var noteColorCurrentLabel = $("#noteColorCurrentLabel");
+    var quickNoteColorCustom = $("#quickNoteColorCustom");
+    var quickNoteCustomSwatch = $("#quickNoteCustomSwatch");
     var btnSaveNote = $("#btnSaveNote");
+    var btnCancelNoteEdit = $("#btnCancelNoteEdit");
+    var btnCloseNoteEditor = $("#btnCloseNoteEditor");
     var btnNotesFavorites = $("#btnNotesFavorites");
     var btnOpenNoteEditor = $("#btnOpenNoteEditor");
+    var noteEditorOverlay = $("#noteEditorOverlay");
     var notesListCard = $("#notesListCard");
     var notesEditorCard = $("#notesEditorCard");
     var notesList = $("#notesList");
     var notesCount = $("#notesCount");
     var notesEditorStatus = $("#notesEditorStatus");
+    var notesEditorDirtyHint = $("#notesEditorDirtyHint");
+    var noteEditorOriginalTitle = "";
+    var noteEditorOriginalBody = "";
+    var noteEditorOriginalColor = "cream";
+    var noteDragState = null;
 
     var todayPrevBtn = $("#todayPrevBtn");
     var todayNextBtn = $("#todayNextBtn");
@@ -733,16 +802,119 @@
 
     function syncNotesUiFromState(){
       var notesState = getNotesState();
+      if(notesState.editorOpen && notesState.currentId && !noteEditorOriginalTitle && !noteEditorOriginalBody){
+        var currentForBaseline = getNoteById(notesState.currentId);
+        if(currentForBaseline) rememberNoteEditorBaseline(currentForBaseline.title || "", currentForBaseline.body || "", currentForBaseline.color || "cream");
+      }
       if(quickNoteTitle) quickNoteTitle.value = notesState.draftTitle || "";
       if(quickNotes) quickNotes.value = notesState.draftBody || "";
+      syncNoteColorPalette(notesState.draftColor);
       if(typeof setCollapsed === "function"){
         if(notesListCard) setCollapsed(notesListCard, !notesState.listOpen);
-        if(notesEditorCard) setCollapsed(notesEditorCard, !notesState.editorOpen);
       }
+      syncNoteEditorOverlay();
       if(btnNotesFavorites){
         btnNotesFavorites.classList.toggle("isActive", !!notesState.favoritesOnly);
         btnNotesFavorites.setAttribute("aria-pressed", notesState.favoritesOnly ? "true" : "false");
       }
+    }
+
+    function getEditorTitleValue(){
+      return String((quickNoteTitle && quickNoteTitle.value) || "").trim();
+    }
+
+    function getEditorBodyValue(){
+      return String((quickNotes && quickNotes.value) || "").trim();
+    }
+
+    function getEditorColorValue(){
+      return normalizeNoteColor(getNotesState().draftColor);
+    }
+
+    function setNoteColorDropdownOpen(open){
+      if(!noteColorDropdownButton || !noteColorDropdownMenu) return;
+      var shouldOpen = !!open;
+      noteColorDropdownMenu.hidden = !shouldOpen;
+      noteColorDropdownButton.setAttribute("aria-expanded", shouldOpen ? "true" : "false");
+      if(noteColorDropdown) noteColorDropdown.classList.toggle("isOpen", shouldOpen);
+    }
+
+    function syncNoteColorPalette(value){
+      var normalized = normalizeNoteColor(value);
+      var displayHex = getNoteColorHex(normalized);
+      if(quickNoteColorCustom){
+        quickNoteColorCustom.value = isCustomNoteColor(normalized) ? normalized : DEFAULT_CUSTOM_NOTE_COLOR;
+      }
+      if(quickNoteCustomSwatch){
+        quickNoteCustomSwatch.style.background = isCustomNoteColor(normalized) ? normalized : DEFAULT_CUSTOM_NOTE_COLOR;
+      }
+      if(noteColorCurrentSwatch){
+        noteColorCurrentSwatch.style.background = displayHex;
+      }
+      if(noteColorCurrentLabel){
+        noteColorCurrentLabel.textContent = noteColorLabel(normalized);
+      }
+      if(!noteColorDropdownMenu) return;
+      Array.prototype.slice.call(noteColorDropdownMenu.querySelectorAll(".noteColorOption")).forEach(function(btn){
+        var btnColor = btn.getAttribute("data-note-color") || "";
+        var isSelected = isCustomNoteColor(normalized) ? btnColor === "custom" : btnColor === normalized;
+        btn.classList.toggle("isSelected", isSelected);
+        btn.setAttribute("aria-selected", isSelected ? "true" : "false");
+      });
+    }
+
+    function setDraftNoteColor(value){
+      var notesState = getNotesState();
+      var normalized = normalizeNoteColor(value);
+      notesState.draftColor = normalized;
+      syncNoteColorPalette(normalized);
+      updateNoteEditorDirtyHint();
+    }
+
+    function positionCustomNoteColorPickerAnchor(){
+      if(!quickNoteColorCustom) return;
+      var anchor = noteColorDropdownButton || noteColorDropdown || notesEditorCard;
+      var rect = null;
+      try{ rect = anchor && anchor.getBoundingClientRect ? anchor.getBoundingClientRect() : null; }catch(e){ rect = null; }
+      var left = 12;
+      var top = 12;
+      if(rect){
+        var estimatedPickerWidth = 280;
+        left = Math.round(Math.max(12, Math.min(rect.right - estimatedPickerWidth, window.innerWidth - 32)));
+        top = Math.round(Math.max(12, Math.min(rect.bottom + 8, window.innerHeight - 32)));
+      }
+      quickNoteColorCustom.style.position = "fixed";
+      quickNoteColorCustom.style.left = left + "px";
+      quickNoteColorCustom.style.top = top + "px";
+      quickNoteColorCustom.style.right = "auto";
+      quickNoteColorCustom.style.bottom = "auto";
+    }
+
+    function openCustomNoteColorPicker(){
+      if(!quickNoteColorCustom) return;
+      positionCustomNoteColorPickerAnchor();
+      try{ quickNoteColorCustom.click(); }catch(e){}
+      try{ quickNoteColorCustom.focus(); }catch(e){}
+    }
+
+    function rememberNoteEditorBaseline(title, body, color){
+      noteEditorOriginalTitle = String(title || "").trim();
+      noteEditorOriginalBody = String(body || "").trim();
+      noteEditorOriginalColor = normalizeNoteColor(color);
+    }
+
+    function noteEditorIsDirty(){
+      return getEditorTitleValue() !== noteEditorOriginalTitle || getEditorBodyValue() !== noteEditorOriginalBody || getEditorColorValue() !== noteEditorOriginalColor;
+    }
+
+    function syncNoteEditorOverlay(){
+      var notesState = getNotesState();
+      if(!noteEditorOverlay) return;
+      var isOpen = !!notesState.editorOpen;
+      noteEditorOverlay.style.display = isOpen ? "flex" : "none";
+      noteEditorOverlay.setAttribute("aria-hidden", isOpen ? "false" : "true");
+      updateNotesEditorStatus();
+      updateNoteEditorDirtyHint();
     }
 
     function updateNotesEditorStatus(){
@@ -755,10 +927,92 @@
       }
     }
 
+    function updateNoteEditorDirtyHint(message){
+      if(!notesEditorDirtyHint) return;
+      if(message){
+        notesEditorDirtyHint.textContent = message;
+        notesEditorDirtyHint.classList.toggle("isWarning", message.indexOf("salvata") === -1);
+        return;
+      }
+      notesEditorDirtyHint.classList.remove("isWarning");
+      if(!getNotesState().editorOpen){
+        notesEditorDirtyHint.textContent = "";
+      }else if(noteEditorIsDirty()){
+        notesEditorDirtyHint.textContent = "Modifiche non salvate. Salva o annulla prima di chiudere.";
+        notesEditorDirtyHint.classList.add("isWarning");
+      }else if(getNotesState().currentId){
+        notesEditorDirtyHint.textContent = "Nota salvata. Puoi chiudere il pannello.";
+      }else{
+        notesEditorDirtyHint.textContent = "Scrivi una nuova nota, poi salvala per conservarla.";
+      }
+    }
+
+    function hideNoteEditor(){
+      var notesState = getNotesState();
+      notesState.editorOpen = false;
+      syncNoteEditorOverlay();
+      renderNotes();
+      touchAndSave();
+      try{ if(btnOpenNoteEditor) btnOpenNoteEditor.focus(); }catch(e){}
+    }
+
+    function closeNoteEditor(){
+      if(noteEditorIsDirty()){
+        updateNoteEditorDirtyHint("Hai modifiche non salvate. Salva o annulla prima di chiudere.");
+        try{ if(btnSaveNote) btnSaveNote.focus(); }catch(e){}
+        return;
+      }
+      hideNoteEditor();
+    }
+
+    function cancelNoteEdit(){
+      var notesState = getNotesState();
+      var current = getNoteById(notesState.currentId);
+      if(current){
+        notesState.draftTitle = current.title || "";
+        notesState.draftBody = current.body || "";
+        notesState.draftColor = normalizeNoteColor(current.color);
+        rememberNoteEditorBaseline(notesState.draftTitle, notesState.draftBody, notesState.draftColor);
+      }else{
+        notesState.currentId = null;
+        notesState.draftTitle = "";
+        notesState.draftBody = "";
+        notesState.draftColor = "cream";
+        rememberNoteEditorBaseline("", "", "cream");
+      }
+      notesState.editorOpen = false;
+      syncNotesUiFromState();
+      renderNotes();
+      touchAndSave();
+      try{ if(btnOpenNoteEditor) btnOpenNoteEditor.focus(); }catch(e){}
+    }
+
+    function openNoteEditor(note){
+      var notesState = getNotesState();
+      if(note){
+        notesState.currentId = note.id;
+        notesState.draftTitle = note.title || "";
+        notesState.draftBody = note.body || "";
+        notesState.draftColor = normalizeNoteColor(note.color);
+        rememberNoteEditorBaseline(notesState.draftTitle, notesState.draftBody, notesState.draftColor);
+      }else{
+        notesState.currentId = null;
+        notesState.draftTitle = "";
+        notesState.draftBody = "";
+        notesState.draftColor = "cream";
+        rememberNoteEditorBaseline("", "", "cream");
+      }
+      notesState.editorOpen = true;
+      notesState.listOpen = true;
+      syncNotesUiFromState();
+      renderNotes();
+      setTimeout(function(){ try{ if(quickNoteTitle) quickNoteTitle.focus(); }catch(e){} }, 60);
+    }
+
     function buildNotePreview(note){
-      var body = String((note && note.body) || "").trim();
+      var body = String((note && note.body) || "").replace(/\s+/g, " ").trim();
       if(!body) return "Nota vuota.";
-      if(body.length > 140) return body.slice(0, 139) + "…";
+      if(body.length > 80) return body.slice(0, 79).trim() + "...";
       return body;
     }
 
@@ -783,37 +1037,39 @@
       }
       notesList.innerHTML = "";
 
-      if(!notesState.listOpen) return;
+      if(!notesState.listOpen){
+        renderFavoriteNotesPreview();
+        return;
+      }
 
       if(!items.length){
         var empty = document.createElement("div");
         empty.className = "emptyState";
         empty.textContent = notesState.favoritesOnly ? "Nessuna nota preferita." : "Nessuna nota salvata.";
         notesList.appendChild(empty);
+        renderFavoriteNotesPreview();
         return;
       }
 
-      items.forEach(function(note, index){
+      items.forEach(function(note){
         var item = document.createElement("div");
-        item.className = "item noteItem noteColor--" + normalizeNoteColor(note.color) + (notesState.currentId === note.id ? " active" : "");
+        var normalizedColor = normalizeNoteColor(note.color);
+        item.className = "item noteItem " + noteColorClass(normalizedColor) + (notesState.currentId === note.id ? " active" : "");
+        if(isCustomNoteColor(normalizedColor)){
+          item.style.background = buildCustomNoteBackground(normalizedColor);
+          item.style.borderLeftColor = normalizedColor;
+        }
         item.setAttribute("role", "button");
+        item.setAttribute("data-note-id", note.id);
         item.tabIndex = 0;
         item.title = "Apri nota";
 
         function openNote(){
-          notesState.currentId = note.id;
-          notesState.draftTitle = note.title || "";
-          notesState.draftBody = note.body || "";
-          notesState.editorOpen = true;
-          notesState.listOpen = true;
-          syncNotesUiFromState();
-          updateNotesEditorStatus();
-          renderNotes();
-          try{ quickNoteTitle.focus(); }catch(e){}
+          openNoteEditor(note);
         }
 
         item.addEventListener("click", function(e){
-          if(e.target && e.target.closest && e.target.closest(".noteItemActions")) return;
+          if(e.target && e.target.closest && e.target.closest(".noteItemControl")) return;
           openNote();
         });
         item.addEventListener("keydown", function(e){
@@ -823,86 +1079,160 @@
           }
         });
 
-        var main = document.createElement("div");
-        main.className = "noteItemMain";
-
-        var head = document.createElement("div");
-        head.className = "noteItemHead";
-
-        var title = document.createElement("div");
-        title.className = "noteItemTitle";
-
-        var titleText = document.createElement("span");
-        titleText.textContent = note.title || "Nota senza titolo";
-        title.appendChild(titleText);
-
-        var actions = document.createElement("div");
-        actions.className = "noteItemActions";
-
-        function makeBtn(text, titleText, onClick, extraClass, disabled){
+        function makeBtn(text, titleText, onClick, extraClass){
           var btn = document.createElement("button");
           btn.type = "button";
-          btn.className = "smallBtn noteActionBtn" + (extraClass ? " " + extraClass : "");
+          btn.className = "smallBtn noteActionBtn noteItemControl" + (extraClass ? " " + extraClass : "");
           btn.textContent = text;
           btn.title = titleText;
           btn.setAttribute("aria-label", titleText);
-          if(disabled){
-            btn.disabled = true;
-            btn.classList.add("isDisabled");
-          }
           btn.addEventListener("click", function(e){
             e.stopPropagation();
-            if(disabled) return;
             onClick();
           });
           return btn;
         }
 
-        var prev = items[index - 1] || null;
-        var next = items[index + 1] || null;
-        var canMoveUp = !!(prev && !!prev.favorite === !!note.favorite);
-        var canMoveDown = !!(next && !!next.favorite === !!note.favorite);
+        var dragHandle = document.createElement("button");
+        dragHandle.type = "button";
+        dragHandle.className = "noteDragHandle noteItemControl";
+        dragHandle.textContent = "⋮⋮";
+        dragHandle.title = "Tieni premuto e trascina per spostare la nota";
+        dragHandle.setAttribute("aria-label", "Sposta nota");
+        dragHandle.addEventListener("click", function(e){ e.stopPropagation(); });
+        dragHandle.addEventListener("pointerdown", function(e){ startNoteDrag(e, item); });
 
-        actions.appendChild(makeBtn(note.favorite ? "★" : "☆", note.favorite ? "Togli dai preferiti" : "Aggiungi ai preferiti", function(){
+        var main = document.createElement("div");
+        main.className = "noteItemMain";
+
+        var titleRow = document.createElement("div");
+        titleRow.className = "noteItemTitleRow";
+
+        var title = document.createElement("div");
+        title.className = "noteItemTitle";
+        title.textContent = note.title || "Nota senza titolo";
+
+        titleRow.appendChild(title);
+
+        var preview = document.createElement("div");
+        preview.className = "noteItemPreview";
+        preview.textContent = buildNotePreview(note);
+
+        main.appendChild(titleRow);
+        main.appendChild(preview);
+
+        var topActions = document.createElement("div");
+        topActions.className = "noteItemCorner noteItemCornerTop";
+        topActions.appendChild(makeBtn(note.favorite ? "★" : "☆", note.favorite ? "Togli dai preferiti" : "Aggiungi ai preferiti", function(){
           note.favorite = !note.favorite;
           note.updatedAt = new Date().toISOString();
           touchAndSave();
           renderNotes();
         }, note.favorite ? "isActive" : ""));
 
-        actions.appendChild(makeBtn("◉", "Cambia colore: " + noteColorLabel(note.color), function(){
-          var currentIndex = NOTE_COLOR_ORDER.indexOf(normalizeNoteColor(note.color));
-          note.color = NOTE_COLOR_ORDER[(currentIndex + 1) % NOTE_COLOR_ORDER.length];
-          note.updatedAt = new Date().toISOString();
-          touchAndSave();
-          renderNotes();
-        }));
-
-        actions.appendChild(makeBtn("↑", "Sposta su", function(){
-          moveNote(note.id, -1);
-        }, "", !canMoveUp));
-
-        actions.appendChild(makeBtn("↓", "Sposta giù", function(){
-          moveNote(note.id, 1);
-        }, "", !canMoveDown));
-
-        actions.appendChild(makeBtn("✕", "Elimina nota", function(){
+        var bottomActions = document.createElement("div");
+        bottomActions.className = "noteItemCorner noteItemCornerBottom";
+        bottomActions.appendChild(makeBtn("✕", "Elimina nota", function(){
           deleteNote(note.id);
         }, "danger"));
 
-        head.appendChild(title);
-        head.appendChild(actions);
-
-        var preview = document.createElement("div");
-        preview.className = "noteItemPreview";
-        preview.textContent = buildNotePreview(note);
-
-        main.appendChild(head);
-        main.appendChild(preview);
-
+        item.appendChild(dragHandle);
         item.appendChild(main);
+        item.appendChild(topActions);
+        item.appendChild(bottomActions);
         notesList.appendChild(item);
       });
+      renderFavoriteNotesPreview();
+    }
+
+    function startNoteDrag(ev, item){
+      if(!item || !notesList || !ev.pointerId && ev.pointerId !== 0) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      var noteId = item.getAttribute("data-note-id");
+      if(!noteId) return;
+      noteDragState = {
+        item: item,
+        noteId: noteId,
+        pointerId: ev.pointerId,
+        startX: ev.clientX,
+        startY: ev.clientY,
+        moved: false
+      };
+      item.classList.add("isDragging");
+      notesList.classList.add("notesListDragging");
+      try{ item.setPointerCapture(ev.pointerId); }catch(e){}
+      item.addEventListener("pointermove", handleNoteDragMove);
+      item.addEventListener("pointerup", finishNoteDrag);
+      item.addEventListener("pointercancel", finishNoteDrag);
+    }
+
+    function handleNoteDragMove(ev){
+      if(!noteDragState || ev.pointerId !== noteDragState.pointerId) return;
+      ev.preventDefault();
+      var source = noteDragState.item;
+      if(Math.abs(ev.clientY - noteDragState.startY) > 4 || Math.abs(ev.clientX - noteDragState.startX) > 4){
+        noteDragState.moved = true;
+      }
+      source.style.visibility = "hidden";
+      var under = document.elementFromPoint(ev.clientX, ev.clientY);
+      source.style.visibility = "";
+      var target = under && under.closest ? under.closest(".noteItem[data-note-id]") : null;
+      if(!target || target === source || !notesList.contains(target)) return;
+      var targetRect = target.getBoundingClientRect();
+      var targetCenterY = targetRect.top + targetRect.height / 2;
+      var targetCenterX = targetRect.left + targetRect.width / 2;
+      var sameVisualRow = Math.abs(ev.clientY - targetCenterY) < targetRect.height * 0.35;
+      var insertAfter = sameVisualRow ? ev.clientX > targetCenterX : ev.clientY > targetCenterY;
+      if(insertAfter){
+        if(target.nextSibling !== source) notesList.insertBefore(source, target.nextSibling);
+      }else{
+        if(target.previousSibling !== source) notesList.insertBefore(source, target);
+      }
+    }
+
+    function finishNoteDrag(ev){
+      if(!noteDragState) return;
+      var source = noteDragState.item;
+      try{ source.releasePointerCapture(noteDragState.pointerId); }catch(e){}
+      source.removeEventListener("pointermove", handleNoteDragMove);
+      source.removeEventListener("pointerup", finishNoteDrag);
+      source.removeEventListener("pointercancel", finishNoteDrag);
+      source.classList.remove("isDragging");
+      if(notesList) notesList.classList.remove("notesListDragging");
+      var moved = noteDragState.moved;
+      noteDragState = null;
+      if(!moved){
+        renderNotes();
+        return;
+      }
+      applyVisibleNoteOrder();
+    }
+
+    function applyVisibleNoteOrder(){
+      if(!notesList) return;
+      var orderedIds = Array.prototype.slice.call(notesList.querySelectorAll(".noteItem[data-note-id]")).map(function(el){
+        return el.getAttribute("data-note-id");
+      }).filter(Boolean);
+      if(!orderedIds.length) return;
+      reorderNotesByVisibleOrder(orderedIds);
+    }
+
+    function reorderNotesByVisibleOrder(orderedIds){
+      var notesState = getNotesState();
+      var visibleMap = {};
+      orderedIds.forEach(function(id, index){ visibleMap[id] = index; });
+      var grouped = notesState.items.slice().sort(function(a,b){
+        var ai = Object.prototype.hasOwnProperty.call(visibleMap, a.id) ? visibleMap[a.id] : 999999;
+        var bi = Object.prototype.hasOwnProperty.call(visibleMap, b.id) ? visibleMap[b.id] : 999999;
+        if(ai !== bi) return ai - bi;
+        return (a.position || 0) - (b.position || 0);
+      });
+      grouped.forEach(function(note, index){
+        note.position = index;
+      });
+      touchAndSave();
+      renderNotes();
     }
 
     function moveNote(id, direction){
@@ -938,6 +1268,9 @@
         notesState.currentId = null;
         notesState.draftTitle = "";
         notesState.draftBody = "";
+        notesState.draftColor = "cream";
+        notesState.editorOpen = false;
+        rememberNoteEditorBaseline("", "", "cream");
       }
 
       notesState.items.forEach(function(item, index){
@@ -950,10 +1283,12 @@
 
     function saveCurrentNote(){
       var notesState = getNotesState();
-      var title = String((quickNoteTitle && quickNoteTitle.value) || "").trim();
-      var body = String((quickNotes && quickNotes.value) || "").trim();
+      var title = getEditorTitleValue();
+      var body = getEditorBodyValue();
+      var color = getEditorColorValue();
 
       if(!title){
+        updateNoteEditorDirtyHint("Inserisci un titolo prima di salvare la nota.");
         if(quickNoteTitle) quickNoteTitle.focus();
         return;
       }
@@ -962,6 +1297,7 @@
       if(current){
         current.title = title;
         current.body = body;
+        current.color = color;
         current.updatedAt = new Date().toISOString();
       }else{
         var nowISO = new Date().toISOString();
@@ -969,7 +1305,7 @@
           id: uid(),
           title: title,
           body: body,
-          color: "cream",
+          color: color,
           favorite: false,
           position: getNextNotePosition(),
           createdAt: nowISO,
@@ -981,25 +1317,18 @@
 
       notesState.draftTitle = current.title;
       notesState.draftBody = current.body;
+      notesState.draftColor = normalizeNoteColor(current.color);
       notesState.listOpen = true;
-      notesState.editorOpen = false;
+      notesState.editorOpen = true;
+      rememberNoteEditorBaseline(current.title, current.body, current.color);
 
       touchAndSave();
       renderNotes();
+      updateNoteEditorDirtyHint("Nota salvata. Ora puoi chiudere il pannello.");
     }
 
     function startNewNote(){
-      var notesState = getNotesState();
-      notesState.currentId = null;
-      notesState.draftTitle = "";
-      notesState.draftBody = "";
-      notesState.editorOpen = true;
-      notesState.listOpen = true;
-      syncNotesUiFromState();
-      updateNotesEditorStatus();
-      renderNotes();
-      try{ quickNoteTitle.focus(); }catch(e){}
-      touchAndSave();
+      openNoteEditor(null);
     }
 
     function toggleNotesList(){
@@ -1106,12 +1435,6 @@ function wireCollapse(card){
   touchAndSave();
 }
 
-    if(card.id === "notesEditorCard"){
-      var editorState = getNotesState();
-      editorState.editorOpen = isNowOpen;
-      touchAndSave();
-    }
-
     // Se sto aprendo "Aggiungi evento", metto il focus sul titolo
     if(card.id === "addEventCard" && isCollapsed){
       setTimeout(function(){
@@ -1131,11 +1454,6 @@ function wireCollapse(card){
       }, 60);
     }
 
-    if(card.id === "notesEditorCard" && isCollapsed){
-      setTimeout(function(){
-        try{ quickNoteTitle.focus(); }catch(e){}
-      }, 60);
-    }
   }
 
   header.addEventListener("click", function(e){
@@ -1244,11 +1562,11 @@ function iconSvg(name){
 
 wireCollapse(addEventCard);
 wireCollapse(eventsCard);
+wireCollapse(favoriteNotesCard);
 wireCollapse(agendaWeekCard);
 wireCollapse(todoAddCard);
 wireCollapse(todoListCard);
 wireCollapse(notesListCard);
-wireCollapse(notesEditorCard);
 resetEventForm();
     function setView(view){
       tabs.forEach(function(t){ t.classList.toggle("active", t.getAttribute("data-view") === view); });
@@ -2340,8 +2658,98 @@ window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Summary
     function renderSummary(){
+      renderFavoriteNotesPreview();
       renderActiveTodosMini();
       renderAgendaWeek();
+    }
+
+    function openNotebookFavoritesFromCalendar(){
+      var notesState = getNotesState();
+      notesState.listOpen = true;
+      notesState.favoritesOnly = true;
+      notesState.editorOpen = false;
+      syncNotesUiFromState();
+      setView("notebook");
+      setTimeout(function(){
+        try{
+          if(notesListCard) notesListCard.scrollIntoView({ behavior:"smooth", block:"start" });
+        }catch(e){}
+      }, 40);
+    }
+
+    function openFavoriteNoteFromCalendar(noteId){
+      var note = getNoteById(noteId);
+      if(!note){
+        openNotebookFavoritesFromCalendar();
+        return;
+      }
+      var notesState = getNotesState();
+      notesState.listOpen = true;
+      notesState.favoritesOnly = false;
+      setView("notebook");
+      openNoteEditor(note);
+      setTimeout(function(){
+        try{
+          if(notesEditorCard) notesEditorCard.scrollIntoView({ behavior:"smooth", block:"center" });
+        }catch(e){}
+      }, 80);
+    }
+
+    function renderFavoriteNotesPreview(){
+      if(!favoriteNotesPreviewList) return;
+      var favoriteItems = getSortedNotes().filter(function(note){ return !!note.favorite; }).slice(0, 6);
+      favoriteNotesPreviewList.innerHTML = "";
+
+      if(favoriteNotesCount){
+        if(!favoriteItems.length){
+          favoriteNotesCount.textContent = "Nessuna preferita";
+        }else{
+          favoriteNotesCount.textContent = favoriteItems.length === 1 ? "1 preferita" : favoriteItems.length + " preferite";
+        }
+      }
+
+      if(!favoriteItems.length){
+        var empty = document.createElement("div");
+        empty.className = "favoriteNotesEmpty";
+        empty.textContent = "Nessuna nota preferita. Aggiungile dal Taccuino con la stella.";
+        favoriteNotesPreviewList.appendChild(empty);
+        return;
+      }
+
+      favoriteItems.forEach(function(note){
+        var normalizedColor = normalizeNoteColor(note.color);
+        var card = document.createElement("div");
+        card.className = "favoriteNotePreviewCard " + noteColorClass(normalizedColor);
+        if(isCustomNoteColor(normalizedColor)){
+          card.style.background = buildCustomNoteBackground(normalizedColor);
+          card.style.borderLeftColor = normalizedColor;
+        }
+        card.setAttribute("role", "button");
+        card.setAttribute("tabindex", "0");
+        card.title = "Apri questa nota nel Taccuino";
+
+        var title = document.createElement("div");
+        title.className = "favoriteNotePreviewTitle";
+        title.textContent = note.title || "Nota senza titolo";
+
+        var preview = document.createElement("div");
+        preview.className = "favoriteNotePreviewText";
+        preview.textContent = buildNotePreview(note);
+
+        card.appendChild(title);
+        card.appendChild(preview);
+
+        function openFav(){ openFavoriteNoteFromCalendar(note.id); }
+        card.addEventListener("click", openFav);
+        card.addEventListener("keydown", function(ev){
+          if(ev.key === "Enter" || ev.key === " "){
+            ev.preventDefault();
+            openFav();
+          }
+        });
+
+        favoriteNotesPreviewList.appendChild(card);
+      });
     }
 
     function getTodayDate(){
@@ -2647,6 +3055,7 @@ todoActiveList.appendChild(item);
       if(ev.key !== "Escape") return;
       if(window.AgendaAccount && window.AgendaAccount.isOpen && window.AgendaAccount.isOpen()) return;
       if(alarmOverlay && alarmOverlay.style.display === "flex") hideAlarmOverlay();
+      else if(noteEditorOverlay && noteEditorOverlay.style.display === "flex") closeNoteEditor();
       else if(contactOverlay && contactOverlay.style.display === "flex") closeContactModal();
       else closeDay();
     });
@@ -2679,6 +3088,9 @@ todoActiveList.appendChild(item);
     if(contactName) contactName.addEventListener("keydown", function(ev){ if(ev.key === "Enter") saveContact(); });
 
     if(btnSaveNote) btnSaveNote.addEventListener("click", saveCurrentNote);
+    if(btnCancelNoteEdit) btnCancelNoteEdit.addEventListener("click", cancelNoteEdit);
+    if(btnCloseNoteEditor) btnCloseNoteEditor.addEventListener("click", closeNoteEditor);
+    if(noteEditorOverlay) noteEditorOverlay.addEventListener("click", function(ev){ if(ev.target === noteEditorOverlay) closeNoteEditor(); });
     if(btnNotesFavorites) btnNotesFavorites.addEventListener("click", toggleNotesFavorites);
     if(btnOpenNoteEditor) btnOpenNoteEditor.addEventListener("click", openNotesEditorFromList);
 
@@ -2686,8 +3098,8 @@ todoActiveList.appendChild(item);
       quickNoteTitle.addEventListener("input", function(){
         var notesState = getNotesState();
         notesState.draftTitle = quickNoteTitle.value;
-        touchAndSave();
         updateNotesEditorStatus();
+        updateNoteEditorDirtyHint();
       });
       quickNoteTitle.addEventListener("keydown", function(ev){
         if(ev.key === "Enter"){
@@ -2701,7 +3113,65 @@ todoActiveList.appendChild(item);
       quickNotes.addEventListener("input", function(){
         var notesState = getNotesState();
         notesState.draftBody = quickNotes.value;
-        touchAndSave();
+        updateNoteEditorDirtyHint();
+      });
+    }
+
+    if(noteColorDropdownButton){
+      noteColorDropdownButton.addEventListener("click", function(ev){
+        ev.preventDefault();
+        ev.stopPropagation();
+        var isOpen = noteColorDropdownButton.getAttribute("aria-expanded") === "true";
+        setNoteColorDropdownOpen(!isOpen);
+      });
+      noteColorDropdownButton.addEventListener("keydown", function(ev){
+        if(ev.key === "ArrowDown" || ev.key === "Enter" || ev.key === " "){
+          ev.preventDefault();
+          setNoteColorDropdownOpen(true);
+          var selected = noteColorDropdownMenu && noteColorDropdownMenu.querySelector(".noteColorOption.isSelected");
+          try{ (selected || (noteColorDropdownMenu && noteColorDropdownMenu.querySelector(".noteColorOption"))).focus(); }catch(e){}
+        }
+      });
+    }
+
+    if(noteColorDropdownMenu){
+      Array.prototype.slice.call(noteColorDropdownMenu.querySelectorAll(".noteColorOption")).forEach(function(btn){
+        btn.addEventListener("click", function(ev){
+          ev.preventDefault();
+          ev.stopPropagation();
+          var requestedColor = btn.getAttribute("data-note-color") || "cream";
+          if(requestedColor === "custom"){
+            var currentCustom = quickNoteColorCustom ? quickNoteColorCustom.value : DEFAULT_CUSTOM_NOTE_COLOR;
+            setDraftNoteColor(currentCustom || DEFAULT_CUSTOM_NOTE_COLOR);
+            setNoteColorDropdownOpen(false);
+            openCustomNoteColorPicker();
+          }else{
+            setDraftNoteColor(requestedColor);
+            setNoteColorDropdownOpen(false);
+          }
+        });
+        btn.addEventListener("keydown", function(ev){
+          if(ev.key === "Escape"){
+            ev.preventDefault();
+            setNoteColorDropdownOpen(false);
+            try{ if(noteColorDropdownButton) noteColorDropdownButton.focus(); }catch(e){}
+          }
+        });
+      });
+    }
+
+    document.addEventListener("click", function(ev){
+      if(noteColorDropdown && ev.target && !noteColorDropdown.contains(ev.target)){
+        setNoteColorDropdownOpen(false);
+      }
+    });
+
+    if(quickNoteColorCustom){
+      quickNoteColorCustom.addEventListener("input", function(){
+        setDraftNoteColor(quickNoteColorCustom.value || DEFAULT_CUSTOM_NOTE_COLOR);
+      });
+      quickNoteColorCustom.addEventListener("change", function(){
+        setDraftNoteColor(quickNoteColorCustom.value || DEFAULT_CUSTOM_NOTE_COLOR);
       });
     }
 
