@@ -2415,6 +2415,7 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
       if(btnEventNotifications){
         btnEventNotifications.textContent = active ? "Disattiva notifiche eventi" : "Attiva notifiche eventi";
         btnEventNotifications.setAttribute("aria-pressed", active ? "true" : "false");
+        btnEventNotifications.setAttribute("data-notification-state", active ? "active" : "inactive");
       }
       if(btnTestPushNotification) btnTestPushNotification.disabled = !active;
     }

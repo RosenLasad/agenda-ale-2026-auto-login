@@ -2759,6 +2759,26 @@ html[data-theme="light"] .cloudSyncStatus[data-state="locked"]{ color:#9a3f46; }
   flex-wrap:wrap;
   margin: 2px 0 10px;
 }
+#btnEventNotifications[data-notification-state="inactive"]{
+  color:#fff7f7;
+  border-color:rgba(179,48,57,.92);
+  background:linear-gradient(180deg, rgba(181,57,66,.98), rgba(126,34,42,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.12), 0 7px 16px rgba(83,20,27,.2);
+}
+#btnEventNotifications[data-notification-state="inactive"]:hover{
+  border-color:rgba(213,83,91,.98);
+  background:linear-gradient(180deg, rgba(198,68,77,.98), rgba(139,39,47,.98));
+}
+#btnEventNotifications[data-notification-state="active"]{
+  color:#f4fff7;
+  border-color:rgba(55,137,82,.92);
+  background:linear-gradient(180deg, rgba(61,146,89,.98), rgba(38,104,61,.98));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.13), 0 7px 16px rgba(23,78,43,.2);
+}
+#btnEventNotifications[data-notification-state="active"]:hover{
+  border-color:rgba(91,172,116,.98);
+  background:linear-gradient(180deg, rgba(70,158,99,.98), rgba(43,117,68,.98));
+}
 #alarmScheduleStatus[data-state="ok"]{ color:rgba(195,255,220,.90); }
 #alarmScheduleStatus[data-state="pending"]{ color:rgba(255,228,164,.92); }
 #alarmScheduleStatus[data-state="error"]{ color:rgba(255,178,178,.94); }
@@ -2768,6 +2788,22 @@ html[data-theme="light"] #alarmScheduleStatus[data-state="ok"]{ color:#306a45; }
 html[data-theme="light"] #alarmScheduleStatus[data-state="pending"]{ color:#8a6630; }
 :root[data-theme="light"] #alarmScheduleStatus[data-state="error"],
 html[data-theme="light"] #alarmScheduleStatus[data-state="error"]{ color:#9a3f46; }
+
+@media (max-width:520px) and (orientation:portrait){
+  #dayOverlay{
+    padding:16px 18px;
+  }
+  #dayOverlay > .modal{
+    width:100%;
+    margin:auto;
+  }
+}
+
+@media (max-width:350px) and (orientation:portrait){
+  #dayOverlay{
+    padding-inline:15px;
+  }
+}
 .badge.alarmBadge{
   border-color: rgba(255,209,102,.75);
   color:#ffe9a8;
