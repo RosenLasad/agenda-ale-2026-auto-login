@@ -1391,6 +1391,8 @@
     var evAlarmOffset = $("#evAlarmOffset");
     var btnEnableAlarmAudio = $("#btnEnableAlarmAudio");
     var alarmStatus = $("#alarmStatus");
+    var btnEventNotifications = $("#btnEventNotifications");
+    var pushStatus = $("#pushStatus");
     var alarmOverlay = $("#alarmOverlay");
     var alarmTitle = $("#alarmTitle");
     var alarmMeta = $("#alarmMeta");
@@ -1585,7 +1587,7 @@ resetEventForm();
     }
 
     function getInitialAgendaRoute(){
-      var route = { view: "calendar", panel: "" };
+      var route = { view: "calendar", panel: "", date: "", eventId: "" };
       try{
         var params = new URLSearchParams(window.location.search || "");
         var view = String(params.get("view") || params.get("tab") || "calendar").toLowerCase();
@@ -1593,6 +1595,9 @@ resetEventForm();
         var allowedViews = ["calendar", "notebook", "contacts", "today"];
         if(allowedViews.indexOf(view) !== -1) route.view = view;
         route.panel = panel;
+        var date = String(params.get("date") || "");
+        if(/^\d{4}-\d{2}-\d{2}$/.test(date)) route.date = date;
+        route.eventId = String(params.get("event") || "");
         if((window.location.hash || "").toLowerCase() === "#agenda-week") route.panel = "week";
       }catch(e){}
       return route;
@@ -1615,6 +1620,21 @@ resetEventForm();
       setView(route.view);
       if(route.view === "calendar" && (route.panel === "week" || route.panel === "agenda-week" || route.panel === "prossimi-7-giorni")){
         scrollToAgendaWeekPanel();
+      }
+      if(route.view === "calendar" && route.date){
+        var routeDate = parseISO(route.date);
+        if(routeDate && !isNaN(routeDate.getTime())){
+          currentYear = routeDate.getFullYear();
+          currentMonth = routeDate.getMonth();
+          renderCalendar();
+          openDay(route.date);
+          if(route.eventId){
+            var routeEvent = (state.events[route.date] || []).find(function(item){
+              return String(item.id || "") === route.eventId;
+            });
+            if(routeEvent) startEventEdit(routeEvent);
+          }
+        }
       }
     }
 
@@ -2315,9 +2335,146 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
         if(alarmStatus) alarmStatus.textContent = "File sound/alarm.mp3 non trovato o non riproducibile.";
       }
 
-      if("Notification" in window && Notification.permission === "default"){
-        try{ Notification.requestPermission(); }catch(e){}
+    }
+
+    function pushSupported(){
+      return "serviceWorker" in navigator && "PushManager" in window && "Notification" in window;
+    }
+
+    function setPushStatus(message, active){
+      if(pushStatus) pushStatus.textContent = message;
+      if(btnEventNotifications){
+        btnEventNotifications.textContent = active ? "Disattiva notifiche eventi" : "Attiva notifiche eventi";
+        btnEventNotifications.setAttribute("aria-pressed", active ? "true" : "false");
       }
+    }
+
+    function urlBase64ToUint8Array(base64String){
+      var padding = "=".repeat((4 - base64String.length % 4) % 4);
+      var base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+      var rawData = window.atob(base64);
+      return Uint8Array.from(rawData, function(char){ return char.charCodeAt(0); });
+    }
+
+    async function getCurrentPushSubscription(){
+      if(!pushSupported()) return null;
+      var registration = await navigator.serviceWorker.ready;
+      return registration.pushManager.getSubscription();
+    }
+
+    async function refreshPushNotificationStatus(){
+      if(!pushSupported()){
+        setPushStatus("Questo browser non supporta le notifiche quando Digenda è chiusa.", false);
+        if(btnEventNotifications) btnEventNotifications.disabled = true;
+        return;
+      }
+      if(btnEventNotifications) btnEventNotifications.disabled = false;
+      if(Notification.permission === "denied"){
+        setPushStatus("Notifiche bloccate nelle impostazioni del browser o del dispositivo.", false);
+        return;
+      }
+      var subscription = await getCurrentPushSubscription().catch(function(){ return null; });
+      if(subscription){
+        setPushStatus("Notifiche di sistema attive su questo dispositivo.", true);
+      }else if(!isLoggedIn()){
+        setPushStatus("Accedi al tuo account per ricevere avvisi anche con Digenda chiusa.", false);
+      }else{
+        setPushStatus("Notifiche non ancora attive su questo dispositivo.", false);
+      }
+    }
+
+    async function registerPushSubscription(subscription){
+      var response = await fetchCloudWithAuth("/api/push-subscription", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ subscription: subscription.toJSON() })
+      });
+      if(!response.ok) throw new Error("Registrazione della notifica non riuscita");
+    }
+
+    async function enablePushNotifications(){
+      if(!pushSupported()){
+        setPushStatus("Questo browser non supporta le notifiche quando Digenda è chiusa.", false);
+        return;
+      }
+      if(!isLoggedIn()){
+        setPushStatus("Accedi al tuo account, poi riprova ad attivare le notifiche.", false);
+        try{
+          if(window.AgendaAccount && typeof window.AgendaAccount.openQuickLogin === "function"){
+            window.AgendaAccount.openQuickLogin("Accedi per collegare le notifiche degli eventi a questo dispositivo.", true);
+          }
+        }catch(e){}
+        return;
+      }
+
+      if(btnEventNotifications) btnEventNotifications.disabled = true;
+      setPushStatus("Attivazione delle notifiche in corso...", false);
+      try{
+        var permission = Notification.permission;
+        if(permission === "default") permission = await Notification.requestPermission();
+        if(permission !== "granted"){
+          setPushStatus("Permesso non concesso. Puoi riattivarlo nelle impostazioni del browser.", false);
+          return;
+        }
+
+        var registration = await navigator.serviceWorker.ready;
+        var subscription = await registration.pushManager.getSubscription();
+        if(!subscription){
+          var configResponse = await fetch("/api/push-subscription", { cache: "no-store" });
+          if(!configResponse.ok) throw new Error("Il servizio notifiche non è ancora configurato");
+          var config = await configResponse.json();
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(config.publicKey)
+          });
+        }
+        await registerPushSubscription(subscription);
+        setPushStatus("Notifiche di sistema attive su questo dispositivo.", true);
+      }catch(error){
+        console.warn("Attivazione Web Push non riuscita:", error);
+        setPushStatus(error && error.message ? error.message + "." : "Attivazione delle notifiche non riuscita.", false);
+      }finally{
+        if(btnEventNotifications) btnEventNotifications.disabled = false;
+      }
+    }
+
+    async function disablePushNotifications(){
+      var subscription = await getCurrentPushSubscription().catch(function(){ return null; });
+      if(!subscription){
+        setPushStatus("Notifiche non attive su questo dispositivo.", false);
+        return;
+      }
+      try{
+        if(isLoggedIn()){
+          await fetchCloudWithAuth("/api/push-subscription", {
+            method: "DELETE",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ subscription: subscription.toJSON() })
+          });
+        }
+      }catch(error){
+        console.warn("Rimozione registrazione Web Push non riuscita:", error);
+      }
+      try{ await subscription.unsubscribe(); }catch(e){}
+      setPushStatus("Notifiche disattivate su questo dispositivo.", false);
+    }
+
+    async function togglePushNotifications(){
+      var subscription = await getCurrentPushSubscription().catch(function(){ return null; });
+      if(subscription) await disablePushNotifications();
+      else await enablePushNotifications();
+    }
+
+    async function syncExistingPushSubscription(){
+      if(!isLoggedIn() || !pushSupported()){
+        await refreshPushNotificationStatus();
+        return;
+      }
+      var subscription = await getCurrentPushSubscription().catch(function(){ return null; });
+      if(subscription){
+        try{ await registerPushSubscription(subscription); }catch(e){}
+      }
+      await refreshPushNotificationStatus();
     }
 
     function hideAlarmOverlay(){
@@ -2348,15 +2505,6 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
       if(alarmOverlay){
         alarmOverlay.style.display = "flex";
         alarmOverlay.setAttribute("aria-hidden", "false");
-      }
-
-      if("Notification" in window && Notification.permission === "granted"){
-        try{
-          new Notification("Agenda: " + (info.event.title || "Evento"), {
-            body: (info.event.time ? info.event.time + " · " : "") + getEventAlarmLabel(info.event),
-            tag: "agenda-alarm-" + info.key
-          });
-        }catch(e){}
       }
 
       startAlarmSound();
@@ -3064,6 +3212,7 @@ todoActiveList.appendChild(item);
     if(btnCancelEventEdit) btnCancelEventEdit.addEventListener("click", cancelEventEdit);
     if(evAlarmEnabled) evAlarmEnabled.addEventListener("change", syncAlarmFormState);
     if(btnEnableAlarmAudio) btnEnableAlarmAudio.addEventListener("click", enableAlarmAudio);
+    if(btnEventNotifications) btnEventNotifications.addEventListener("click", togglePushNotifications);
     if(btnAlarmStop) btnAlarmStop.addEventListener("click", hideAlarmOverlay);
     if(btnAlarmSnooze) btnAlarmSnooze.addEventListener("click", snoozeActiveAlarm);
     if(alarmOverlay) alarmOverlay.addEventListener("click", function(ev){ if(ev.target === alarmOverlay) hideAlarmOverlay(); });
@@ -3322,12 +3471,17 @@ window.AgendaApp = {
       setCloudWriteLock(false);
       setCloudStatus("idle", "☁️ Cloud: non attivo");
     }
+    syncExistingPushSubscription();
   },
   onIdentityLogin: function(user){
     remoteLoginPrompted = false;
     switchStateForCurrentSession();
     startRemotePolling();
     beginMandatoryCloudRefresh();
+    syncExistingPushSubscription();
+  },
+  onIdentityBeforeLogout: function(){
+    return disablePushNotifications();
   },
   onIdentityLogout: function(){
     remoteLoginPrompted = false;
@@ -3335,6 +3489,7 @@ window.AgendaApp = {
     setCloudWriteLock(false);
     switchStateForCurrentSession();
     setCloudStatus("idle", "☁️ Cloud: non attivo");
+    refreshPushNotificationStatus();
   },
   requestSoftSync: function(){
     scheduleRemoteRefresh(false, false);

@@ -11,3 +11,8 @@
   from = "/api/widget-week"
   to = "/.netlify/functions/widget-week"
   status = 200
+
+[[redirects]]
+  from = "/api/push-subscription"
+  to = "/.netlify/functions/push-subscription"
+  status = 200

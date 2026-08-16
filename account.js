@@ -51,9 +51,10 @@
   function callAgendaHook(name, arg){
     try{
       if(window.AgendaApp && typeof window.AgendaApp[name] === "function"){
-        window.AgendaApp[name](arg);
+        return window.AgendaApp[name](arg);
       }
     }catch(e){}
+    return undefined;
   }
 
   function getIdentityUser(){
@@ -464,7 +465,9 @@
     if(user && user.email) rememberLoginEmail(user.email);
     markQuickLoginDismissed();
     if(!window.netlifyIdentity || !window.netlifyIdentity.logout) return;
-    window.netlifyIdentity.logout().then(function(){
+    Promise.resolve(callAgendaHook("onIdentityBeforeLogout", user)).catch(function(){}).then(function(){
+      return window.netlifyIdentity.logout();
+    }).then(function(){
       setAccountMessage("Sei uscito dal tuo account.", "success");
       closeQuickLogin(false);
       renderAccountModal();

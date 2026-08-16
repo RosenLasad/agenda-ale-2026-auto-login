@@ -1,4 +1,4 @@
-const CACHE_NAME = "agenda-shell-v23";
+const CACHE_NAME = "agenda-shell-v24";
 
 const APP_SHELL = [
   "./",
@@ -104,6 +104,48 @@ self.addEventListener("fetch", (event) => {
         .catch(() => cached);
 
       return cached || networkFetch;
+    })
+  );
+});
+
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {
+    data = { body: event.data ? event.data.text() : "Hai un evento in Digenda." };
+  }
+
+  const title = data.title || "Digenda · Sveglia evento";
+  const options = {
+    body: data.body || "È arrivato il momento del tuo evento.",
+    icon: "/icons/icon-192.png",
+    badge: "/icons/icon-192.png",
+    tag: data.tag || "digenda-event-alarm",
+    renotify: true,
+    requireInteraction: true,
+    timestamp: Number(data.timestamp) || Date.now(),
+    vibrate: [250, 100, 250],
+    data: {
+      url: data.url || "/?view=calendar",
+      dateISO: data.dateISO || "",
+      eventId: data.eventId || ""
+    }
+  };
+  event.waitUntil(self.registration.showNotification(title, options));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const targetUrl = new URL(event.notification.data?.url || "/?view=calendar", self.location.origin).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then(async (clients) => {
+      for (const client of clients) {
+        if (new URL(client.url).origin !== self.location.origin) continue;
+        if ("navigate" in client) await client.navigate(targetUrl);
+        return client.focus();
+      }
+      return self.clients.openWindow ? self.clients.openWindow(targetUrl) : undefined;
     })
   );
 });
