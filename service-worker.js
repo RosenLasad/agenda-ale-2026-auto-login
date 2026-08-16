@@ -1,10 +1,24 @@
-const CACHE_NAME = "agenda-shell-v15";
+const CACHE_NAME = "agenda-shell-v22";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./actions.js",
+  "./account.js",
+  "./oggi/today-data-core.js",
+  "./oggi/today-data-2026-04.js",
+  "./oggi/today-data-2026-05.js",
+  "./oggi/today-data-2026-06.js",
+  "./oggi/today-data-2026-07.js",
+  "./oggi/today-data-2026-08.js",
+  "./oggi/today-data-2026-09.js",
+  "./oggi/today-data-2026-10.js",
+  "./oggi/today-data-2026-11.js",
+  "./oggi/today-data-2026-12.js",
+  "./oggi/today-utils.js",
+  "./oggi/today-view.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
