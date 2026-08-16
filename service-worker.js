@@ -1,4 +1,4 @@
-const CACHE_NAME = "agenda-shell-v24";
+const CACHE_NAME = "agenda-shell-v25";
 
 const APP_SHELL = [
   "./",
@@ -124,6 +124,7 @@ self.addEventListener("push", (event) => {
     tag: data.tag || "digenda-event-alarm",
     renotify: true,
     requireInteraction: true,
+    silent: false,
     timestamp: Number(data.timestamp) || Date.now(),
     vibrate: [250, 100, 250],
     data: {

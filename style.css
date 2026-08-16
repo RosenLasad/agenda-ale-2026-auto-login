@@ -2759,6 +2759,15 @@ html[data-theme="light"] .cloudSyncStatus[data-state="locked"]{ color:#9a3f46; }
   flex-wrap:wrap;
   margin: 2px 0 10px;
 }
+#alarmScheduleStatus[data-state="ok"]{ color:rgba(195,255,220,.90); }
+#alarmScheduleStatus[data-state="pending"]{ color:rgba(255,228,164,.92); }
+#alarmScheduleStatus[data-state="error"]{ color:rgba(255,178,178,.94); }
+:root[data-theme="light"] #alarmScheduleStatus[data-state="ok"],
+html[data-theme="light"] #alarmScheduleStatus[data-state="ok"]{ color:#306a45; }
+:root[data-theme="light"] #alarmScheduleStatus[data-state="pending"],
+html[data-theme="light"] #alarmScheduleStatus[data-state="pending"]{ color:#8a6630; }
+:root[data-theme="light"] #alarmScheduleStatus[data-state="error"],
+html[data-theme="light"] #alarmScheduleStatus[data-state="error"]{ color:#9a3f46; }
 .badge.alarmBadge{
   border-color: rgba(255,209,102,.75);
   color:#ffe9a8;

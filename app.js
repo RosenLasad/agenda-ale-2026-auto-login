@@ -1389,9 +1389,11 @@
     var evCat = $("#evCat");
     var evAlarmEnabled = $("#evAlarmEnabled");
     var evAlarmOffset = $("#evAlarmOffset");
+    var alarmScheduleStatus = $("#alarmScheduleStatus");
     var btnEnableAlarmAudio = $("#btnEnableAlarmAudio");
     var alarmStatus = $("#alarmStatus");
     var btnEventNotifications = $("#btnEventNotifications");
+    var btnTestPushNotification = $("#btnTestPushNotification");
     var pushStatus = $("#pushStatus");
     var alarmOverlay = $("#alarmOverlay");
     var alarmTitle = $("#alarmTitle");
@@ -1405,6 +1407,7 @@
     var addEventTitle = $("#addEventTitle");
     var editingEventId = null;
     var alarmAudio = null;
+    var alarmTestAudio = null;
     var activeAlarmInfo = null;
     var alarmCheckHandle = null;
 
@@ -1479,6 +1482,49 @@ function syncAlarmFormState(){
       ? "La sveglia userà il file sound/alarm.mp3."
       : "Sveglia disattivata per questo evento.";
   }
+  syncAlarmSchedulePreview();
+}
+
+function formatAlarmScheduleDate(fireAt, dateISO){
+  if(!fireAt || isNaN(fireAt.getTime())) return "";
+  var timeLabel = new Intl.DateTimeFormat("it-IT", {
+    hour: "2-digit",
+    minute: "2-digit"
+  }).format(fireAt);
+  if(isoDate(fireAt) === dateISO) return "alle " + timeLabel;
+  var dayLabel = new Intl.DateTimeFormat("it-IT", {
+    weekday: "short",
+    day: "numeric",
+    month: "short"
+  }).format(fireAt);
+  return dayLabel + " alle " + timeLabel;
+}
+
+function syncAlarmSchedulePreview(){
+  if(!alarmScheduleStatus) return;
+  if(!evAlarmEnabled || !evAlarmEnabled.checked){
+    alarmScheduleStatus.textContent = "Attiva la sveglia per vedere l’orario effettivo dell’avviso.";
+    alarmScheduleStatus.removeAttribute("data-state");
+    return;
+  }
+  if(!selectedISO || !evTime || !evTime.value){
+    alarmScheduleStatus.textContent = "Scegli l’orario dell’evento per programmare la sveglia.";
+    alarmScheduleStatus.setAttribute("data-state", "pending");
+    return;
+  }
+  var fireAt = getEventAlarmFireDate(selectedISO, evTime.value, evAlarmOffset ? evAlarmOffset.value : 0);
+  if(!fireAt){
+    alarmScheduleStatus.textContent = "Non riesco a calcolare l’orario della sveglia.";
+    alarmScheduleStatus.setAttribute("data-state", "error");
+    return;
+  }
+  if(fireAt.getTime() <= Date.now()){
+    alarmScheduleStatus.textContent = "L’orario effettivo della sveglia è già passato.";
+    alarmScheduleStatus.setAttribute("data-state", "error");
+    return;
+  }
+  alarmScheduleStatus.textContent = "La sveglia scatterà " + formatAlarmScheduleDate(fireAt, selectedISO) + ".";
+  alarmScheduleStatus.setAttribute("data-state", "ok");
 }
 
 function buildAlarmFromForm(dateISO, eventId){
@@ -1501,8 +1547,19 @@ function buildAlarmFromForm(dateISO, eventId){
   };
 
   var fireAt = getEventAlarmFireDate(dateISO, evTime.value, offsetMinutes);
-  if(fireAt && fireAt.getTime() <= Date.now() - 60000){
-    alarm.lastFiredKey = getEventAlarmFireKey(dateISO, eventId, offsetMinutes);
+  if(fireAt && fireAt.getTime() <= Date.now()){
+    var existingEvent = (state.events[dateISO] || []).find(function(item){
+      return String(item.id || "") === String(eventId || "");
+    });
+    var unchangedExistingAlarm = existingEvent &&
+      eventHasAlarm(existingEvent) &&
+      String(existingEvent.time || "") === String(evTime.value || "") &&
+      normalizeAlarmOffset(existingEvent.alarm.offsetMinutes) === offsetMinutes;
+    if(unchangedExistingAlarm) return normalizeEventAlarm(existingEvent.alarm);
+
+    window.alert("L’orario effettivo della sveglia è già passato. Scegli un orario futuro oppure riduci l’anticipo.");
+    try{ evTime.focus(); }catch(e){}
+    return null;
   }
 
   return alarm;
@@ -2275,19 +2332,30 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
       return alarmAudio;
     }
 
+    function releaseAudioElement(audio){
+      if(!audio) return;
+      try{
+        audio.pause();
+        audio.removeAttribute("src");
+        audio.load();
+      }catch(e){}
+    }
+
+    function stopAlarmTestAudio(){
+      if(!alarmTestAudio) return;
+      releaseAudioElement(alarmTestAudio);
+      alarmTestAudio = null;
+    }
+
     function stopAlarmSound(){
       if(!alarmAudio) return;
-      try{
-        alarmAudio.pause();
-        alarmAudio.currentTime = 0;
-        alarmAudio.loop = true;
-        alarmAudio.muted = false;
-        alarmAudio.volume = 1;
-      }catch(e){}
+      releaseAudioElement(alarmAudio);
+      alarmAudio = null;
     }
 
     function startAlarmSound(){
       if(alarmAudioHint) alarmAudioHint.textContent = "";
+      stopAlarmTestAudio();
       try{
         var audio = getAlarmAudio();
         audio.loop = true;
@@ -2310,8 +2378,10 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
     }
 
     function enableAlarmAudio(){
+      stopAlarmTestAudio();
       try{
-        var audio = getAlarmAudio();
+        var audio = new Audio(ALARM_SOUND_PATH);
+        alarmTestAudio = audio;
         audio.loop = false;
         audio.muted = false;
         audio.volume = 1;
@@ -2321,17 +2391,15 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
           playPromise.then(function(){
             if(alarmStatus) alarmStatus.textContent = "Suoni attivati. Hai sentito un breve test della sveglia.";
             setTimeout(function(){
-              try{
-                audio.pause();
-                audio.currentTime = 0;
-                audio.loop = true;
-              }catch(e){}
+              if(alarmTestAudio === audio) stopAlarmTestAudio();
             }, 900);
           }).catch(function(){
+            if(alarmTestAudio === audio) stopAlarmTestAudio();
             if(alarmStatus) alarmStatus.textContent = "Non riesco ad avviare il suono. Verifica che sound/alarm.mp3 esista e riprova.";
           });
         }
       }catch(e){
+        stopAlarmTestAudio();
         if(alarmStatus) alarmStatus.textContent = "File sound/alarm.mp3 non trovato o non riproducibile.";
       }
 
@@ -2347,6 +2415,7 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
         btnEventNotifications.textContent = active ? "Disattiva notifiche eventi" : "Attiva notifiche eventi";
         btnEventNotifications.setAttribute("aria-pressed", active ? "true" : "false");
       }
+      if(btnTestPushNotification) btnTestPushNotification.disabled = !active;
     }
 
     function urlBase64ToUint8Array(base64String){
@@ -2410,6 +2479,12 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
       if(btnEventNotifications) btnEventNotifications.disabled = true;
       setPushStatus("Attivazione delle notifiche in corso...", false);
       try{
+        var configResponse = await fetch("/api/push-subscription", { cache: "no-store" });
+        var config = await configResponse.json().catch(function(){ return {}; });
+        if(!configResponse.ok || !config.publicKey){
+          throw new Error("Netlify non vede ancora le chiavi Web Push nelle funzioni");
+        }
+
         var permission = Notification.permission;
         if(permission === "default") permission = await Notification.requestPermission();
         if(permission !== "granted"){
@@ -2420,9 +2495,6 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
         var registration = await navigator.serviceWorker.ready;
         var subscription = await registration.pushManager.getSubscription();
         if(!subscription){
-          var configResponse = await fetch("/api/push-subscription", { cache: "no-store" });
-          if(!configResponse.ok) throw new Error("Il servizio notifiche non è ancora configurato");
-          var config = await configResponse.json();
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(config.publicKey)
@@ -2463,6 +2535,35 @@ setTimeout(function(){ try{ btnCloseDay.focus(); }catch(e){} }, 30);
       var subscription = await getCurrentPushSubscription().catch(function(){ return null; });
       if(subscription) await disablePushNotifications();
       else await enablePushNotifications();
+    }
+
+    async function testPushNotification(){
+      if(!isLoggedIn()){
+        setPushStatus("Accedi al tuo account per inviare una notifica di prova.", false);
+        return;
+      }
+      var subscription = await getCurrentPushSubscription().catch(function(){ return null; });
+      if(!subscription){
+        setPushStatus("Prima attiva le notifiche eventi su questo dispositivo.", false);
+        return;
+      }
+      if(btnTestPushNotification) btnTestPushNotification.disabled = true;
+      if(pushStatus) pushStatus.textContent = "Invio della notifica di prova...";
+      try{
+        var response = await fetchCloudWithAuth("/api/push-test", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ endpoint: subscription.endpoint })
+        });
+        var result = await response.json().catch(function(){ return {}; });
+        if(!response.ok) throw new Error(result.error || "Invio della notifica di prova non riuscito");
+        setPushStatus("Notifica di prova inviata: dovrebbe apparire tra pochi secondi.", true);
+      }catch(error){
+        console.warn("Test Web Push non riuscito:", error);
+        setPushStatus(error && error.message ? error.message + "." : "Invio della notifica di prova non riuscito.", true);
+      }finally{
+        if(btnTestPushNotification) btnTestPushNotification.disabled = false;
+      }
     }
 
     async function syncExistingPushSubscription(){
@@ -3211,8 +3312,11 @@ todoActiveList.appendChild(item);
     btnAddEvent.addEventListener("click", handleEventSubmit);
     if(btnCancelEventEdit) btnCancelEventEdit.addEventListener("click", cancelEventEdit);
     if(evAlarmEnabled) evAlarmEnabled.addEventListener("change", syncAlarmFormState);
+    if(evTime) evTime.addEventListener("input", syncAlarmSchedulePreview);
+    if(evAlarmOffset) evAlarmOffset.addEventListener("change", syncAlarmSchedulePreview);
     if(btnEnableAlarmAudio) btnEnableAlarmAudio.addEventListener("click", enableAlarmAudio);
     if(btnEventNotifications) btnEventNotifications.addEventListener("click", togglePushNotifications);
+    if(btnTestPushNotification) btnTestPushNotification.addEventListener("click", testPushNotification);
     if(btnAlarmStop) btnAlarmStop.addEventListener("click", hideAlarmOverlay);
     if(btnAlarmSnooze) btnAlarmSnooze.addEventListener("click", snoozeActiveAlarm);
     if(alarmOverlay) alarmOverlay.addEventListener("click", function(ev){ if(ev.target === alarmOverlay) hideAlarmOverlay(); });
