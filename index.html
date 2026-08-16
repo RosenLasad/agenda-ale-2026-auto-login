@@ -480,7 +480,7 @@
       <div class="modalHeader">
         <h3 id="dayTitle">—</h3>
         <div style="display:flex; gap:8px; flex-wrap:wrap;">
-          <button class="btn primary" id="btnAddEvent">Aggiungi</button>
+          <button class="btn primary" id="btnAddEvent" type="button">Aggiungi</button>
           <button class="btn" id="btnCancelEventEdit" type="button" hidden>Annulla</button>
           <button class="btn" id="btnCloseDay" title="Chiudi (Esc)">Chiudi</button>
         </div>
@@ -491,21 +491,21 @@
             <h2 id="addEventTitle">Aggiungi evento</h2>
             <span class="chev">▾</span>
           </div>
-          <div class="cardBody">
+          <form class="cardBody" id="eventForm" autocomplete="off">
             <div class="row">
               <div class="field">
-                <label>Titolo</label>
-                <input id="evTitle" type="text" placeholder="Es: Riunione / Riprese / Dentista...">
+                <label for="evTitle">Titolo</label>
+                <input id="evTitle" name="agenda-event-title" type="text" placeholder="Es: Riunione / Riprese / Dentista..." autocomplete="off" autocapitalize="sentences" spellcheck="true">
               </div>
               <div class="field">
-                <label>Orario (opzionale)</label>
-                <input id="evTime" type="time">
+                <label for="evTime">Orario (opzionale)</label>
+                <input id="evTime" name="agenda-event-time" type="time" autocomplete="off">
               </div>
             </div>
             <div class="row">
               <div class="field">
-                <label>Categoria</label>
-                <select id="evCat">
+                <label for="evCat">Categoria</label>
+                <select id="evCat" name="agenda-event-category" autocomplete="off">
                   <option value="work">🔴 Lavoro</option>
                   <option value="priv">🔵 Privato</option>
                   <option value="sdac">🟡 SDAC</option>
@@ -513,8 +513,8 @@
                 </select>
               </div>
               <div class="field alarmField">
-                <label class="checkLine"><input id="evAlarmEnabled" type="checkbox"> Sveglia</label>
-                <select id="evAlarmOffset" disabled>
+                <label class="checkLine"><input id="evAlarmEnabled" name="agenda-event-alarm" type="checkbox" autocomplete="off"> Sveglia</label>
+                <select id="evAlarmOffset" name="agenda-event-alarm-offset" autocomplete="off" disabled>
                   <option value="0">All'orario</option>
                   <option value="5">5 minuti prima</option>
                   <option value="15">15 minuti prima</option>
@@ -533,12 +533,12 @@
               <span class="hint" id="pushStatus">Le notifiche di sistema avvisano anche quando Digenda è chiusa.</span>
             </div>
             <div class="field">
-              <label>Note (opzionale)</label>
-              <textarea id="evNotes" placeholder="Dettagli, indirizzo, contatti..."></textarea>
+              <label for="evNotes">Note (opzionale)</label>
+              <textarea id="evNotes" name="agenda-event-notes" placeholder="Dettagli, indirizzo, contatti..." autocomplete="off" autocapitalize="sentences" spellcheck="true"></textarea>
             </div>
-            <button class="btn" id="btnPrintDay" title="Stampa eventi del giorno">Stampa</button>
+            <button class="btn" id="btnPrintDay" type="button" title="Stampa eventi del giorno">Stampa</button>
             <div class="hint" style="margin-top:8px">Ordinati per orario (se c’è), poi inserimento.</div>
-          </div>
+          </form>
         </div>
 
         <div class="card collapsible" id="eventsCard" style="box-shadow:none">
@@ -640,16 +640,16 @@
             <button class="btn accountTabBtn" id="accountTabSignup" type="button" role="tab" aria-selected="false">Crea account</button>
           </div>
 
-          <div class="accountPane" id="accountLoginPane">
+          <form class="accountPane" id="accountLoginPane" autocomplete="on">
             <div class="accountPaneTitle">Accedi</div>
             <div class="field">
-              <label>Email</label>
-              <input id="accountLoginEmail" type="email" placeholder="nome@email.com" autocomplete="email">
+              <label for="accountLoginEmail">Email</label>
+              <input id="accountLoginEmail" name="username" type="email" placeholder="nome@email.com" autocomplete="username">
             </div>
             <div class="field">
-              <label>Password</label>
+                <label for="accountLoginPassword">Password</label>
               <div class="passwordInputWrap">
-                <input id="accountLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+                <input id="accountLoginPassword" name="password" type="password" placeholder="Password" autocomplete="current-password">
                 <button class="passwordToggleBtn" id="toggleAccountLoginPassword" type="button" aria-label="Mostra password" aria-pressed="false">👁</button>
               </div>
             </div>
@@ -659,28 +659,28 @@
               <button class="btn" id="btnAccountRecover" type="button">Password dimenticata?</button>
             </div>
             <div class="hint">Se non hai ancora un account, puoi crearlo in pochi secondi.</div>
-          </div>
+          </form>
 
-          <div class="accountPane hidden" id="accountSignupPane">
+          <form class="accountPane hidden" id="accountSignupPane" autocomplete="on">
             <div class="accountPaneTitle">Crea account</div>
             <div class="field">
-              <label>Email</label>
-              <input id="accountSignupEmail" type="email" placeholder="nome@email.com" autocomplete="email">
+              <label for="accountSignupEmail">Email</label>
+              <input id="accountSignupEmail" name="username" type="email" placeholder="nome@email.com" autocomplete="username">
             </div>
             <div class="field">
-              <label>Password</label>
-              <input id="accountSignupPassword" type="password" placeholder="Scegli una password" autocomplete="new-password">
+              <label for="accountSignupPassword">Password</label>
+              <input id="accountSignupPassword" name="new-password" type="password" placeholder="Scegli una password" autocomplete="new-password">
             </div>
             <div class="field">
-              <label>Conferma password</label>
-              <input id="accountSignupPassword2" type="password" placeholder="Ripeti la password" autocomplete="new-password">
+              <label for="accountSignupPassword2">Conferma password</label>
+              <input id="accountSignupPassword2" name="new-password-confirmation" type="password" placeholder="Ripeti la password" autocomplete="new-password">
             </div>
             <div class="accountFormActions">
               <button class="btn primary" id="btnAccountSignup" type="button">Crea account</button>
               <button class="btn" id="btnAccountContinueFreeSignup" type="button">Continua gratis</button>
             </div>
             <div class="hint">L'account ti permette di sincronizzare Agenda tra più dispositivi.</div>
-          </div>
+          </form>
         </div>
 
         <div class="accountUserView hidden" id="accountUserView">
@@ -748,7 +748,7 @@
   <div class="overlay quickLoginOverlay" id="quickLoginOverlay" role="dialog" aria-modal="true" aria-hidden="true">
     <div class="modal quickLoginModal">
       <button class="quickLoginClose" id="closeQuickLoginBtn" type="button" aria-label="Chiudi login rapido">×</button>
-      <div class="quickLoginBody">
+      <form class="quickLoginBody" id="quickLoginForm" autocomplete="on">
         <div class="quickLoginKicker">Cloud Agenda</div>
         <h3>Se sei già iscritto, fai il Login</h3>
         <p>Accedi per riattivare subito la sincronizzazione cloud su questo dispositivo.</p>
@@ -756,13 +756,13 @@
         <div class="quickLoginStatus hidden" id="quickLoginStatus"></div>
 
         <div class="field">
-          <label>Email</label>
-          <input id="quickLoginEmail" type="email" placeholder="nome@email.com" autocomplete="email">
+          <label for="quickLoginEmail">Email</label>
+          <input id="quickLoginEmail" name="username" type="email" placeholder="nome@email.com" autocomplete="username">
         </div>
         <div class="field">
-          <label>Password</label>
+          <label for="quickLoginPassword">Password</label>
           <div class="passwordInputWrap">
-            <input id="quickLoginPassword" type="password" placeholder="Password" autocomplete="current-password">
+            <input id="quickLoginPassword" name="password" type="password" placeholder="Password" autocomplete="current-password">
             <button class="passwordToggleBtn" id="toggleQuickLoginPassword" type="button" aria-label="Mostra password" aria-pressed="false">👁</button>
           </div>
         </div>
@@ -772,7 +772,7 @@
           <button class="btn" id="btnQuickLoginSkip" type="button">Continua senza Cloud</button>
         </div>
         <button class="quickLoginFullBtn" id="btnQuickLoginFullAccount" type="button">Apri il pannello account completo</button>
-      </div>
+      </form>
     </div>
   </div>
 

@@ -13,6 +13,8 @@
   var accountTabSignup = document.getElementById("accountTabSignup");
   var accountLoginPane = document.getElementById("accountLoginPane");
   var accountSignupPane = document.getElementById("accountSignupPane");
+  var accountLoginForm = document.getElementById("accountLoginPane");
+  var accountSignupForm = document.getElementById("accountSignupPane");
   var accountLoginEmail = document.getElementById("accountLoginEmail");
   var accountLoginPassword = document.getElementById("accountLoginPassword");
   var accountSignupEmail = document.getElementById("accountSignupEmail");
@@ -34,6 +36,7 @@
   var btnAccountLogout = document.getElementById("btnAccountLogout");
 
   var quickLoginOverlay = document.getElementById("quickLoginOverlay");
+  var quickLoginForm = document.getElementById("quickLoginForm");
   var closeQuickLoginBtn = document.getElementById("closeQuickLoginBtn");
   var quickLoginStatus = document.getElementById("quickLoginStatus");
   var quickLoginEmail = document.getElementById("quickLoginEmail");
@@ -539,6 +542,18 @@
     if(closeQuickLoginBtn) closeQuickLoginBtn.addEventListener("click", function(){ closeQuickLogin(true); });
     if(btnAccountLogin) btnAccountLogin.addEventListener("click", handleAccountLogin);
     if(btnQuickLogin) btnQuickLogin.addEventListener("click", handleQuickLogin);
+    if(accountLoginForm) accountLoginForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      handleAccountLogin();
+    });
+    if(accountSignupForm) accountSignupForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      handleAccountSignup();
+    });
+    if(quickLoginForm) quickLoginForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      handleQuickLogin();
+    });
     if(btnQuickLoginSkip) btnQuickLoginSkip.addEventListener("click", function(){ closeQuickLogin(true); });
     if(btnQuickLoginFullAccount) btnQuickLoginFullAccount.addEventListener("click", function(){
       closeQuickLogin(false);

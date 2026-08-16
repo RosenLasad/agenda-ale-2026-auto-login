@@ -1387,6 +1387,7 @@
     var evTitle = $("#evTitle");
     var evNotes = $("#evNotes");
     var evCat = $("#evCat");
+    var eventForm = $("#eventForm");
     var evAlarmEnabled = $("#evAlarmEnabled");
     var evAlarmOffset = $("#evAlarmOffset");
     var alarmScheduleStatus = $("#alarmScheduleStatus");
@@ -3310,6 +3311,10 @@ todoActiveList.appendChild(item);
     });
 
     btnAddEvent.addEventListener("click", handleEventSubmit);
+    if(eventForm) eventForm.addEventListener("submit", function(ev){
+      ev.preventDefault();
+      handleEventSubmit();
+    });
     if(btnCancelEventEdit) btnCancelEventEdit.addEventListener("click", cancelEventEdit);
     if(evAlarmEnabled) evAlarmEnabled.addEventListener("change", syncAlarmFormState);
     if(evTime) evTime.addEventListener("input", syncAlarmSchedulePreview);
