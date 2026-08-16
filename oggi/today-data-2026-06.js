@@ -613,7 +613,7 @@
           holiday: "",
           holidayAlt: "",
           saint: "San Cirillo d'Alessandria",
-          saintType: "vescovo e dottore della Chiesa",
+          saintType: "Vescovo e dottore della Chiesa",
           saintBio: "Patriarca di Alessandria nel V secolo, san Cirillo fu una figura decisiva nelle controversie cristologiche e nella difesa della maternita divina di Maria. Il suo insegnamento ha lasciato un'impronta profonda nella teologia della Chiesa.",
           saintQuote: null
         },
@@ -636,7 +636,7 @@
           holiday: "",
           holidayAlt: "",
           saint: "Sant'Ireneo di Lione",
-          saintType: "vescovo, martire e dottore della Chiesa",
+          saintType: "Vescovo, martire e dottore della Chiesa",
           saintBio: "Vescovo di Lione nel II secolo, sant'Ireneo fu uno dei grandi padri della Chiesa antica e combatte con lucidita le eresie del suo tempo. La sua teologia mette in risalto l'unita della storia della salvezza e la pienezza di Cristo.",
           saintQuote: "La gloria di Dio e l'uomo vivente, e la vita dell'uomo e la visione di Dio."
         },
@@ -659,7 +659,7 @@
           holiday: "",
           holidayAlt: "",
           saint: "Santi Pietro e Paolo",
-          saintType: "apostoli e patroni di Roma",
+          saintType: "Apostoli e patroni di Roma",
           saintBio: "Pietro e Paolo sono i due grandi pilastri della Chiesa apostolica. Pietro, il primo tra gli apostoli, e Paolo, l'instancabile missionario delle genti, testimoniarono a Roma il Vangelo fino al martirio.",
           saintQuote: null
         },
@@ -682,7 +682,7 @@
           holiday: "",
           holidayAlt: "",
           saint: "Santi Primi Martiri della Chiesa di Roma",
-          saintType: "martiri",
+          saintType: "Martiri",
           saintBio: "Questa memoria ricorda il gruppo dei primi cristiani di Roma uccisi sotto l'imperatore Nerone dopo l'incendio della citta. Sono venerati come il seme nascosto e fecondo della comunita cristiana romana.",
           saintQuote: null
         },

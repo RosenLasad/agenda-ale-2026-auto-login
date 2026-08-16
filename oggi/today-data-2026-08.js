@@ -50,7 +50,7 @@
     "proverb": {
       "original": "Agosto, boun pasto e bon mosto",
       "translation": "Agosto porta buon cibo e buon mosto",
-      "note": ""
+      "note": "Celebra l’abbondanza di agosto, mese generoso a tavola e promettente per la vendemmia."
     },
     "foodNote": "Domenica di agosto: il Polpettone di fagiolini e patate è il compagno ideale per il pranzo al sacco sulle alture.",
     "heroSubline": "Chi t’ha fæto o mâ t’o dagghe o ben.",
@@ -73,7 +73,7 @@
     "proverb": {
       "original": "A Sant'Onorâ, o caldo o se n’andâ",
       "translation": "A Sant’Onorato (16 agosto), il grande caldo se ne va",
-      "note": ""
+      "note": "Un riferimento al lento cambio di stagione: dopo la metà di agosto il caldo comincia tradizionalmente a perdere forza."
     },
     "foodNote": "Tempo di Muscoli (cozze) ripieni alla spezzina: un capolavoro di pazienza con uova, parmigiano, mortadella e pane.",
     "heroSubline": "Nâve ròtta, ògni vento o l’è cóntra.",
@@ -96,7 +96,7 @@
     "proverb": {
       "original": "A San Loénso, l’uga a se pìnze",
       "translation": "A San Lorenzo (10 agosto), l’uva inizia a colorarsi",
-      "note": ""
+      "note": "Detto da vignaioli: intorno a San Lorenzo l’uva cambia colore e annuncia l’avvicinarsi della vendemmia."
     },
     "foodNote": "Caldo torrido? Un Vermentino di Terenzuola ghiacciato pulisce il palato con la sua nota salina.",
     "heroSubline": "Tanti debiti, tante croxe.",
@@ -142,7 +142,7 @@
     "proverb": {
       "original": "Se o ciêuve d’agosto, euio, mêle e mosto",
       "translation": "Se piove ad agosto avremo olio, miele e mosto",
-      "note": ""
+      "note": "La pioggia d’agosto, quando arriva nella giusta misura, è considerata preziosa per i frutti della terra."
     },
     "foodNote": "È il momento dei fichi neri: dolcissimi, si sposano a meraviglia con il prosciutto crudo o la pancetta locale.",
     "heroSubline": "Barca vègia, mænâ de badda.",
@@ -165,7 +165,7 @@
     "proverb": {
       "original": "Agosto o donda, Settembre o feconda",
       "translation": "Agosto culla, settembre rende fecondo il vino",
-      "note": ""
+      "note": "Agosto accompagna la maturazione, mentre settembre raccoglie e trasforma ciò che l’estate ha preparato."
     },
     "foodNote": "Preparazione della Focaccia di Recco in casa: con l'umidità di agosto, la pasta si tira che è una meraviglia.",
     "heroSubline": "Unna man lava l'atra e tutte due lavan a fassa.",
@@ -186,9 +186,9 @@
       "text": ""
     },
     "proverb": {
-      "original": "A",
-      "translation": "a Madonna d’agosto, se rinfresca o bosco – All’Assunta (15 agosto) rinfresca la vegetazione",
-      "note": ""
+      "original": "A-a Madonna d’agosto, se rinfresca o bosco",
+      "translation": "All’Assunta (15 agosto) rinfresca la vegetazione",
+      "note": "Un’antica osservazione stagionale: intorno all’Assunta anche il bosco comincia ad avvertire un’aria più fresca."
     },
     "foodNote": "Le acciughe salate dell'anno scorso sono ora perfette: puliscile e gustale con burro e pane nero.",
     "heroSubline": "Dime con chi ti vai e t'o diö chi ti ê.",
@@ -234,7 +234,7 @@
     "proverb": {
       "original": "Se o ciêuve de San Loénso, piove pe quaranta dì",
       "translation": "Se piove a San Lorenzo, pioverà per quaranta giorni",
-      "note": ""
+      "note": "Tipica esagerazione meteorologica popolare, nata per ricordare che il tempo di San Lorenzo può segnare il resto dell’estate."
     },
     "foodNote": "Notte di San Lorenzo: cena in spiaggia con fritto misto di pesce nel cartoccio (o scartòccio).",
     "heroSubline": "Chi l’ha dæto o l’ha dæto, e chi l’ha avùo o l’ha avùo.",
@@ -255,9 +255,9 @@
       "text": ""
     },
     "proverb": {
-      "original": "San Ròcco o pìgia o caldo e o lo pòrta a",
-      "translation": "o ròcco – San Rocco (16 agosto) prende il caldo e lo mette al riparo",
-      "note": ""
+      "original": "San Ròcco o pìgia o caldo e o lo pòrta a-o ròcco",
+      "translation": "San Rocco (16 agosto) prende il caldo e lo mette al riparo",
+      "note": "San Rocco rappresenta simbolicamente il momento in cui il grande caldo viene messo da parte."
     },
     "foodNote": "I peperoni gialli e rossi sono al massimo della carnosità. Ottimi ripieni \"di magro\" con riso e verdure.",
     "heroSubline": "Bon vin o n'ha bezogno de frasca.",
@@ -280,7 +280,7 @@
     "proverb": {
       "original": "Agosto asciutto, gran per tutto",
       "translation": "Agosto secco (per chi trebbia tardi) è una garanzia",
-      "note": ""
+      "note": "Detto agricolo ottimista: il tempo asciutto protegge il grano e favorisce le ultime operazioni del raccolto."
     },
     "foodNote": "Dessert di stagione: le pesche al vino (Pigato o Rossese) con un pizzico di zucchero e menta.",
     "heroSubline": "Parlâ pe' dâ aria a-i dinti e fâ mugugno.",
@@ -303,7 +303,7 @@
     "proverb": {
       "original": "A San Loénso, o gran o l'è into grané",
       "translation": "A San Lorenzo il grano è già al sicuro",
-      "note": ""
+      "note": "A San Lorenzo il lavoro dei campi dovrebbe essere concluso e il grano già custodito al sicuro."
     },
     "foodNote": "Preparazione delle verdure in agrodolce da conservare per l'inverno.",
     "heroSubline": "Êsse un \"pòrta e pònni\"",
@@ -326,7 +326,7 @@
     "proverb": {
       "original": "Agosto o l’ha o cucco in sciô nâ",
       "translation": "Ad agosto il cuculo tace definitivamente",
-      "note": ""
+      "note": "Il silenzio del cuculo è uno dei piccoli segnali naturali che annunciano l’avanzare della stagione."
     },
     "foodNote": "Vigilia di Ferragosto: grande sfornata di torte di verdura (bietole, riso, cipolle) da mangiare tiepide.",
     "heroSubline": "In t'una casa ghe va solo un gallo.",
@@ -349,7 +349,7 @@
     "proverb": {
       "original": "Se o trona d’agosto, l’annâ a l’è d’oro",
       "translation": "Se tuona ad agosto, l’annata agricola sarà ottima",
-      "note": ""
+      "note": "Il temporale estivo viene letto come un buon auspicio per la campagna e per i raccolti dell’anno."
     },
     "foodNote": "Ferragosto: il piatto della festa è il Cappon Magro nelle versioni più sontuose, trionfo di pesce e salsa verde.",
     "heroSubline": "San Zorzu o l'ha ammasòu o dragu.",
@@ -372,7 +372,7 @@
     "proverb": {
       "original": "Agosto o l'è o meize ch'o fa cantâ a çigâa",
       "translation": "Agosto è il mese delle cicale",
-      "note": ""
+      "note": "Le cicale sono la voce più riconoscibile dell’estate piena e delle giornate assolate di agosto."
     },
     "foodNote": "San Rocco: in molti borghi si mangia la Lumache in umido, piatto rituale di questa giornata.",
     "heroSubline": "Mangiâ o fégato",
@@ -441,7 +441,7 @@
     "proverb": {
       "original": "Agosto bagnòu, vigne roinæ",
       "translation": "Agosto troppo bagnato rovina le vigne",
-      "note": ""
+      "note": "Un avvertimento dei vignaioli: troppa pioggia durante la maturazione può danneggiare l’uva."
     },
     "foodNote": "I pomodori Cuore di Bue sono talmente maturi che si prestano a fare la \"pappa\" ligure o condire la galletta del marinaio.",
     "heroSubline": "No se pêu sciusciâ e sciurbî nsemme.",
@@ -487,7 +487,7 @@
     "proverb": {
       "original": "In agosto, o vènto o l'è un amîgo",
       "translation": "Ad agosto il vento è un sollievo",
-      "note": ""
+      "note": "Nelle giornate più calde anche una semplice brezza diventa una presenza gradita e ristoratrice."
     },
     "foodNote": "Un bicchiere di Ormeasco di Pornassio sciacquetto (rosato) accompagna bene i salumi dell'entroterra.",
     "heroSubline": "Tramontann-a fresca, o pèscio o l'è in t'a ræ.",
@@ -531,9 +531,9 @@
       "text": ""
     },
     "proverb": {
-      "original": "Agosto o dâ o bòn odô a",
-      "translation": "a pèrsiga – Agosto dà il buon profumo alla pesca",
-      "note": ""
+      "original": "Agosto o dâ o bòn odô a-a pèrsiga",
+      "translation": "Agosto dà il buon profumo alla pesca",
+      "note": "Agosto porta le pesche alla piena maturazione, rendendole dolci, profumate e pronte da raccogliere."
     },
     "foodNote": "Tempo di Panissa fritta come aperitivo serale nei vicoli di Genova.",
     "heroSubline": "Dâ d'ægua a-o fêugo col mugugno.",
@@ -556,7 +556,7 @@
     "proverb": {
       "original": "A San Bartolomê, l'estæ a pèrde i pê",
       "translation": "A San Bartolomeo (24 agosto) l'estate inizia a vacillare",
-      "note": ""
+      "note": "San Bartolomeo segna simbolicamente il momento in cui l’estate comincia lentamente a perdere stabilità."
     },
     "foodNote": "San Bartolomeo: tradizionalmente si mangiano i ravioli di borragine conditi con il tocco (sugo di carne).",
     "heroSubline": "L'è mêgio un tòcco de pan con onô che una torta con vergögna.",
@@ -579,7 +579,7 @@
     "proverb": {
       "original": "Agosto o l'è o re de l'estæ",
       "translation": "Agosto è il culmine dell'estate",
-      "note": ""
+      "note": "Agosto è rappresentato come il sovrano dell’estate, con il suo sole pieno, il caldo e i frutti maturi."
     },
     "foodNote": "Se rinfresca, è il momento di un Minestrone alla genovese, servito tiepido con un cucchiaio generoso di pesto.",
     "heroSubline": "O mâ o g'ha a bùcca grànde.",
@@ -602,7 +602,7 @@
     "proverb": {
       "original": "A Sant’Anna l’ægua a rinfresca a canna",
       "translation": "La pioggia (di fine luglio/inizio agosto) rinfresca la gola",
-      "note": ""
+      "note": "Immagine semplice e contadina: una pioggia nel cuore dell’estate porta refrigerio alla terra e alle persone."
     },
     "foodNote": "Le uve bianche precoci iniziano a trovarsi sui mercati: dolci e croccanti.",
     "heroSubline": "O diâo o n’ha corne e manco coa.",
@@ -625,7 +625,7 @@
     "proverb": {
       "original": "In agosto l'erba a se secca in sciô prâ",
       "translation": "Ad agosto l'erba ingiallisce sui prati",
-      "note": ""
+      "note": "Descrive il paesaggio di fine estate, quando il sole ha ormai ingiallito prati e pendii."
     },
     "foodNote": "Preparazione dello scabeccio: pesce azzurro fritto e marinato con cipolle e aceto, perfetto per le serate afose.",
     "heroSubline": "Chi vêu l'aggetta, o se l'aspetta.",
@@ -648,7 +648,7 @@
     "proverb": {
       "original": "Agosto o l'ha o dì ch'o s'accurta",
       "translation": "Ad agosto le giornate si accorciano visibilmente",
-      "note": ""
+      "note": "Anche se il caldo continua, la luce diminuisce e il tramonto arriva ogni giorno un poco prima."
     },
     "foodNote": "Sant'Agostino: prova i canestrelli di Torriglia con un calice di passito ligure (Sciacchetrà).",
     "heroSubline": "O vento o l'è o màngia-mænâ.",
@@ -671,7 +671,7 @@
     "proverb": {
       "original": "Se o ciêuve d'agosto, s'ammuffisce o pugno",
       "translation": "Se piove troppo ad agosto, il raccolto marcisce",
-      "note": ""
+      "note": "Ricorda che la pioggia eccessiva può rovinare proprio ciò che è ormai vicino alla raccolta."
     },
     "foodNote": "I peperoncini verdi fritti (friggitelli) sono il contorno immancabile di fine mese.",
     "heroSubline": "San Benéito, a rùndana sùtta o téito.",
@@ -694,7 +694,7 @@
     "proverb": {
       "original": "Agosto o l'è o meize di temporæ",
       "translation": "Agosto è il mese dei temporali pomeridiani",
-      "note": ""
+      "note": "Il caldo accumulato durante il giorno può sfogarsi nei caratteristici temporali estivi del pomeriggio."
     },
     "foodNote": "Ultima domenica del mese: grigliata di pesce (triglie, orate e branzini) pescati nel nostro mare.",
     "heroSubline": "A Santa Luçia a nòtte a l'è a ciù lùnga che ghe scia.",
@@ -717,7 +717,7 @@
     "proverb": {
       "original": "In agosto, o marinâ o pìgia o sô",
       "translation": "In agosto il marinaio si gode il sole",
-      "note": ""
+      "note": "Chiude il mese con un’immagine di mare, sole e quiete, quasi un ultimo saluto all’estate piena."
     },
     "foodNote": "Chiusura in dolcezza con la Gelatina di more di rovo, raccolte lungo i sentieri della costa.",
     "heroSubline": "Mangiâ da can e fâ o servixio da lùp.",

@@ -156,7 +156,8 @@
   }
 
   function inRange(mmdd, start, end){
-    return mmdd >= start && mmdd <= end;
+    if(start <= end) return mmdd >= start && mmdd <= end;
+    return mmdd >= start || mmdd <= end;
   }
 
   function findRange(mmdd, ranges){

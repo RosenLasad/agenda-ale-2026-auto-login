@@ -37,10 +37,21 @@
     return "Tra " + offset + " giorni";
   }
 
+  function joinNonEmpty(parts){
+    return (parts || []).filter(function(part){
+      return part != null && String(part).trim() !== "";
+    }).join(" · ");
+  }
+
+  function capitalizeFirst(value){
+    var text = String(value || "").trim();
+    return text ? text.charAt(0).toUpperCase() + text.slice(1) : "";
+  }
+
   function fillFeast(feast, fallback){
     if(feast){
-      setText("todayFeastTitle", (feast.holiday || "") + (feast.saint ? " · " + feast.saint : ""));
-      setText("todayFeastSubtitle", (feast.holidayAlt || "") + (feast.saintType ? " · " + feast.saintType : ""));
+      setText("todayFeastTitle", joinNonEmpty([feast.holiday, feast.saint]));
+      setText("todayFeastSubtitle", joinNonEmpty([feast.holidayAlt, capitalizeFirst(feast.saintType)]));
       setText("todaySaintBio", feast.saintBio || "");
       var quoteWrap = byId("todaySaintQuoteWrap");
       if(feast.saintQuote){
