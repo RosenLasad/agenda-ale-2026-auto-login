@@ -88,8 +88,15 @@
     setText("todaySunrise", astronomy.sunrise);
     setText("todaySunset", astronomy.sunset);
     setText("todayDayLength", astronomy.dayLengthText);
+    setText("todayDayLengthCompact", astronomy.dayLengthText.replace(/\s+/g, "").replace(/m$/, ""));
     setText("todayDayDelta", astronomy.dayDeltaText);
     setText("todayMoonPhase", moon.labelWithIllumination);
+    setText("todayMoonIllumination", Math.round(moon.illumination * 100) + "%");
+    var moonItem = byId("todayMoonItem");
+    if(moonItem){
+      moonItem.setAttribute("title", moon.labelWithIllumination);
+      moonItem.setAttribute("aria-label", "Fase lunare: " + moon.labelWithIllumination);
+    }
 
     fillFeast(editorial.feast, data.feastFallback || {
       title: "Ricorrenza da compilare",
