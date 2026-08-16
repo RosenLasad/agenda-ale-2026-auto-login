@@ -1550,13 +1550,27 @@ header{
   display:block;
 }
 
-.todayMetaItem{
-  padding:10px 12px;
-  border:1px solid rgba(176,138,74,.24);
-  border-radius:12px;
-  background: linear-gradient(180deg, rgba(255,255,255,.40), rgba(255,255,255,.14));
+.todaySunTimes{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
 }
 
+.todaySunTime strong{
+  display:inline;
+}
+
+.todayMetaCompactLabel,
+.todayMetaLabel--compact,
+.todayMetaValue--compact,
+.todayMetaSunDivider{
+  display:none;
+}
+
+#todayMoonIllumination,
+#todayDayLengthCompact{
+  display:none;
+}
 
 .todayMetaLabel{
   display:block;
@@ -1643,11 +1657,82 @@ header{
   }
 
   .todayMetaGrid{
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: minmax(0, 2.15fr) minmax(76px, 1fr);
+    gap:0;
+    overflow:hidden;
+    border:1px solid rgba(176,138,74,.24);
+    border-radius:12px;
+    background: linear-gradient(180deg, rgba(255,255,255,.40), rgba(255,255,255,.14));
   }
 
-  .todayMetaGrid{
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+  .todayMetaItem{
+    min-width:0;
+    display:flex;
+    align-items:baseline;
+    gap:4px;
+    padding:8px 10px;
+    border:0;
+    border-radius:0;
+    background:transparent;
+    text-align:left;
+    white-space:nowrap;
+  }
+
+  .todayMetaItem:nth-child(odd){
+    border-right:1px solid rgba(176,138,74,.20);
+  }
+
+  .todayMetaItem:nth-child(-n+2){
+    border-bottom:1px solid rgba(176,138,74,.20);
+  }
+
+  .todayMetaLabel{
+    display:inline;
+    flex:0 0 auto;
+    margin:0;
+    font-size:11px;
+  }
+
+  .todayMetaLabel--wide,
+  #todayMoonPhase,
+  #todayDayLength{
+    display:none;
+  }
+
+  .todayMetaCompactLabel,
+  .todayMetaLabel--compact,
+  .todayMetaValue--compact,
+  .todayMetaSunDivider{
+    display:inline;
+  }
+
+  #todayMoonIllumination,
+  #todayDayLengthCompact{
+    display:inline;
+  }
+
+  .todayMetaItem strong{
+    display:inline;
+    font-size:13px;
+    line-height:1.2;
+  }
+
+  .todaySunTimes{
+    min-width:0;
+    display:flex;
+    flex-direction:row;
+    align-items:baseline;
+    gap:3px;
+  }
+
+  .todaySunTime{
+    display:inline-flex;
+    align-items:baseline;
+    gap:3px;
+  }
+
+  .todayMetaSunDivider{
+    color:var(--muted);
   }
 
   .todayProverbOriginal{
@@ -1655,8 +1740,20 @@ header{
   }
 }
 
-.todayMetaItem--sun strong + strong{
-  margin-top:6px;
+@media (max-width: 380px){
+  .todayMetaItem{
+    gap:3px;
+    padding:7px 6px;
+  }
+
+  .todayMetaLabel,
+  .todayMetaCompactLabel{
+    font-size:10px;
+  }
+
+  .todayMetaItem strong{
+    font-size:12px;
+  }
 }
 
 

@@ -325,14 +325,28 @@
         <div class="card todayAstronomyCard">
           <div class="cardHeader"><h2>Cielo del giorno</h2></div>
           <div class="cardBody todayMetaGrid">
-<div class="todayMetaItem todayMetaItem--sun">
-  <span class="todayMetaLabel">Alba / Tramonto</span>
-  <strong id="todaySunrise">—</strong>
-  <strong id="todaySunset">—</strong>
-</div>
-            <div class="todayMetaItem todayMetaItem--full"><span class="todayMetaLabel">Fase lunare</span><strong id="todayMoonPhase">—</strong></div>
-            <div class="todayMetaItem"><span class="todayMetaLabel">Differenza da ieri</span><strong id="todayDayDelta">—</strong></div>
-            <div class="todayMetaItem"><span class="todayMetaLabel">Durata del giorno</span><strong id="todayDayLength">—</strong></div>
+            <div class="todayMetaItem todayMetaItem--sun">
+              <span class="todayMetaLabel todayMetaLabel--wide">Alba / Tramonto</span>
+              <div class="todaySunTimes">
+                <span class="todaySunTime"><span class="todayMetaCompactLabel">Alba</span><strong id="todaySunrise">—</strong></span>
+                <span class="todayMetaSunDivider" aria-hidden="true">·</span>
+                <span class="todaySunTime"><span class="todayMetaCompactLabel">Tramonto</span><strong id="todaySunset">—</strong></span>
+              </div>
+            </div>
+            <div class="todayMetaItem todayMetaItem--full" id="todayMoonItem">
+              <span class="todayMetaLabel"><span class="todayMetaLabel--wide">Fase lunare</span><span class="todayMetaLabel--compact">Luna</span></span>
+              <strong id="todayMoonPhase">—</strong>
+              <strong class="todayMetaValue--compact" id="todayMoonIllumination">—</strong>
+            </div>
+            <div class="todayMetaItem">
+              <span class="todayMetaLabel"><span class="todayMetaLabel--wide">Differenza da ieri</span><span class="todayMetaLabel--compact">Da ieri</span></span>
+              <strong id="todayDayDelta">—</strong>
+            </div>
+            <div class="todayMetaItem">
+              <span class="todayMetaLabel"><span class="todayMetaLabel--wide">Durata del giorno</span><span class="todayMetaLabel--compact">Luce</span></span>
+              <strong id="todayDayLength">—</strong>
+              <strong class="todayMetaValue--compact" id="todayDayLengthCompact">—</strong>
+            </div>
           </div>
         </div>
 
