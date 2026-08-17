@@ -733,6 +733,9 @@
 
     var agendaWeekCount = $("#agendaWeekCount");
     var agendaWeekList = $("#agendaWeekList");
+    var settingsMenu = $("#settingsMenu");
+    var settingsToggle = $("#settingsToggle");
+    var settingsPanel = $("#settingsPanel");
     var btnExport = $("#btnExport");
     var importFile = $("#importFile");
     var btnReset = $("#btnReset");
@@ -3327,6 +3330,35 @@ todoActiveList.appendChild(item);
     if(btnAlarmSnooze) btnAlarmSnooze.addEventListener("click", snoozeActiveAlarm);
     if(alarmOverlay) alarmOverlay.addEventListener("click", function(ev){ if(ev.target === alarmOverlay) hideAlarmOverlay(); });
     btnPrintDay.addEventListener("click", printDay);
+
+    function setSettingsMenuOpen(open){
+      if(!settingsMenu || !settingsToggle || !settingsPanel) return;
+      settingsMenu.classList.toggle("isOpen", !!open);
+      settingsToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      settingsToggle.setAttribute("aria-label", open ? "Chiudi impostazioni" : "Apri impostazioni");
+      settingsPanel.setAttribute("aria-hidden", open ? "false" : "true");
+    }
+
+    if(settingsToggle){
+      settingsToggle.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        setSettingsMenuOpen(!settingsMenu.classList.contains("isOpen"));
+      });
+    }
+    if(settingsPanel){
+      settingsPanel.addEventListener("click", function(ev){
+        if(ev.target.closest(".settingsAction")) setSettingsMenuOpen(false);
+      });
+    }
+    document.addEventListener("click", function(ev){
+      if(settingsMenu && !settingsMenu.contains(ev.target)) setSettingsMenuOpen(false);
+    });
+    document.addEventListener("keydown", function(ev){
+      if(ev.key === "Escape" && settingsMenu && settingsMenu.classList.contains("isOpen")){
+        setSettingsMenuOpen(false);
+        settingsToggle.focus();
+      }
+    });
 
     btnExport.addEventListener("click", exportJSON);
     importFile.addEventListener("change", importJSON);

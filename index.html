@@ -32,11 +32,16 @@
         <div class="actionsBlock">
           <div class="actions">
             <button class="btn hidden" id="installBtn" type="button" title="Installa Agenda">Installa</button>
-            <button class="btn iconBtn" id="btnExport" title="Scarica un file JSON con tutti i dati" aria-label="Esporta JSON"><span class="ico">📤</span></button>
-            <span class="btn fileBtn iconBtn" title="Carica un file JSON esportato in precedenza" aria-label="Importa JSON"><span class="ico">⬆️</span><input id="importFile" type="file" accept="application/json">
-            </span>
-            <button class="btn danger iconBtn" id="btnReset" title="Azzera tutto (fa anche un export)" aria-label="Reset"><span class="ico">♻️</span></button>
-            <button class="btn iconBtn" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico">☁️</span></button>
+            <div class="settingsMenu" id="settingsMenu">
+              <button class="btn iconBtn settingsToggle" id="settingsToggle" type="button" title="Impostazioni" aria-label="Apri impostazioni" aria-haspopup="true" aria-expanded="false" aria-controls="settingsPanel"><span class="ico" aria-hidden="true">⚙️</span></button>
+              <div class="settingsPanel" id="settingsPanel" role="group" aria-label="Impostazioni rapide" aria-hidden="true">
+                <button class="btn settingsAction" id="btnExport" type="button" title="Scarica un file JSON con tutti i dati" aria-label="Esporta JSON"><span class="ico" aria-hidden="true">📤</span><span class="settingsActionLabel">Esporta</span></button>
+                <span class="btn fileBtn settingsAction" title="Carica un file JSON esportato in precedenza"><span class="ico" aria-hidden="true">⬆️</span><span class="settingsActionLabel">Importa</span><input id="importFile" type="file" accept="application/json" aria-label="Importa JSON">
+                </span>
+                <button class="btn danger settingsAction" id="btnReset" type="button" title="Azzera tutto (fa anche un export)" aria-label="Reset"><span class="ico" aria-hidden="true">♻️</span><span class="settingsActionLabel">Reset</span></button>
+                <button class="btn settingsAction" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico" aria-hidden="true">☁️</span><span class="settingsActionLabel">Cloud</span></button>
+              </div>
+            </div>
             <button class="btn" id="loginBtn">Login</button>
           </div>
           <div class="cloudSyncStatus" id="cloudSyncStatus" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
