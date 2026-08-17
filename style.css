@@ -2687,21 +2687,61 @@ input[type="number"]{ width:100%; border:1px solid var(--line); background: rgba
   flex:0 0 auto;
 }
 .cloudSyncStatus{
+  position:relative;
   max-width:430px;
   text-align:right;
   font-size:11px;
-  white-space:pre-line;
   line-height:1.35;
   color:rgba(244,238,221,.78);
   letter-spacing:.01em;
+}
+.cloudSyncDetails{
+  white-space:pre-line;
   user-select:none;
 }
+.cloudSyncCompact{
+  display:none;
+  align-items:center;
+  justify-content:center;
+  gap:4px;
+  min-width:42px;
+  height:26px;
+  padding:0 7px;
+  border:1px solid rgba(176,138,74,.34);
+  border-radius:9px;
+  background:rgba(255,255,255,.035);
+  color:inherit;
+  font:inherit;
+  line-height:1;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+}
+.cloudSyncCloud{
+  font-size:14px;
+  line-height:1;
+}
+.cloudSyncIndicator{
+  width:14px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  font-size:15px;
+  font-weight:900;
+  line-height:1;
+}
 .cloudSyncStatus[data-state="ok"]{ color:rgba(195,255,220,.90); }
+.cloudSyncStatus[data-state="ok"] .cloudSyncIndicator{ color:#76e39b; }
 .cloudSyncStatus[data-state="syncing"],
 .cloudSyncStatus[data-state="pending"]{ color:rgba(255,228,164,.92); }
+.cloudSyncStatus[data-state="syncing"] .cloudSyncIndicator,
+.cloudSyncStatus[data-state="pending"] .cloudSyncIndicator,
+.cloudSyncStatus[data-state="locked"] .cloudSyncIndicator{ color:#ffd27a; }
 .cloudSyncStatus[data-state="conflict"],
 .cloudSyncStatus[data-state="error"],
 .cloudSyncStatus[data-state="locked"]{ color:rgba(255,178,178,.94); }
+.cloudSyncStatus[data-state="conflict"] .cloudSyncIndicator,
+.cloudSyncStatus[data-state="error"] .cloudSyncIndicator,
+.cloudSyncStatus[data-state="idle"] .cloudSyncIndicator{ color:#ff8f95; }
 body.cloudSyncLocked #view-calendar,
 body.cloudSyncLocked #view-notebook,
 body.cloudSyncLocked #view-contacts,
@@ -2730,6 +2770,11 @@ html[data-theme="light"] .cloudSyncStatus[data-state="pending"]{ color:#8a6630; 
 html[data-theme="light"] .cloudSyncStatus[data-state="conflict"],
 html[data-theme="light"] .cloudSyncStatus[data-state="error"],
 html[data-theme="light"] .cloudSyncStatus[data-state="locked"]{ color:#9a3f46; }
+:root[data-theme="light"] .cloudSyncCompact,
+html[data-theme="light"] .cloudSyncCompact{
+  border-color:rgba(126,91,53,.28);
+  background:rgba(255,255,255,.46);
+}
 @media (max-width: 760px){
   .actionsBlock{
     width:auto;
@@ -2739,6 +2784,65 @@ html[data-theme="light"] .cloudSyncStatus[data-state="locked"]{ color:#9a3f46; }
     max-width:100%;
     font-size:10.5px;
   }
+}
+@media (max-width: 560px){
+  .cloudSyncStatus{
+    z-index:35;
+    max-width:none;
+  }
+  .cloudSyncCompact{
+    display:inline-flex;
+  }
+  .cloudSyncDetails{
+    position:absolute;
+    top:calc(100% + 6px);
+    right:0;
+    z-index:55;
+    display:block;
+    width:max-content;
+    max-width:min(290px, calc(100vw - 24px));
+    padding:8px 10px;
+    border:1px solid rgba(176,138,74,.46);
+    border-radius:10px;
+    background:linear-gradient(180deg, rgba(74,31,38,.98), rgba(48,20,25,.99));
+    box-shadow:0 10px 24px rgba(18,6,9,.30), inset 0 1px 0 rgba(255,255,255,.07);
+    text-align:left;
+    font-size:10.5px;
+    line-height:1.45;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transform:translateY(-4px) scale(.98);
+    transform-origin:top right;
+    transition:opacity .14s ease, transform .14s ease, visibility 0s linear .14s;
+  }
+  .cloudSyncStatus.isOpen .cloudSyncDetails{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    transform:translateY(0) scale(1);
+    transition-delay:0s;
+  }
+  :root[data-theme="light"] .cloudSyncDetails,
+  html[data-theme="light"] .cloudSyncDetails{
+    border-color:rgba(126,91,53,.32);
+    background:linear-gradient(180deg, rgba(251,245,232,.99), rgba(235,223,198,.99));
+    box-shadow:0 10px 24px rgba(55,35,20,.16), inset 0 1px 0 rgba(255,255,255,.72);
+  }
+  .cloudSyncStatus[data-state="syncing"] .cloudSyncIndicator,
+  .cloudSyncStatus[data-state="pending"] .cloudSyncIndicator,
+  .cloudSyncStatus[data-state="locked"] .cloudSyncIndicator{
+    animation:cloudSyncSpin 1s linear infinite;
+  }
+}
+@keyframes cloudSyncSpin{
+  to{ transform:rotate(360deg); }
+}
+@media (prefers-reduced-motion: reduce){
+  .cloudSyncDetails{ transition:none; }
+  .cloudSyncStatus[data-state="syncing"] .cloudSyncIndicator,
+  .cloudSyncStatus[data-state="pending"] .cloudSyncIndicator,
+  .cloudSyncStatus[data-state="locked"] .cloudSyncIndicator{ animation:none; }
 }
 
 

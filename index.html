@@ -44,7 +44,14 @@
             </div>
             <button class="btn" id="loginBtn">Login</button>
           </div>
-          <div class="cloudSyncStatus" id="cloudSyncStatus" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
+          <div class="cloudSyncStatus" id="cloudSyncStatus" data-state="idle">
+            <button class="cloudSyncCompact" id="cloudSyncToggle" type="button" aria-expanded="false" aria-controls="cloudSyncDetails" title="Mostra dettagli cloud">
+              <span class="cloudSyncCloud" aria-hidden="true">☁️</span>
+              <span class="cloudSyncIndicator" id="cloudSyncIndicator" aria-hidden="true">✕</span>
+              <span class="srOnly" id="cloudSyncCompactLabel">Cloud: non verificato</span>
+            </button>
+            <div class="cloudSyncDetails" id="cloudSyncDetails" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
+          </div>
         </div>
       </div>
 

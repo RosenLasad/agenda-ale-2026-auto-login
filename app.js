@@ -420,29 +420,43 @@
       btnCloudRefresh.title = kind === "ok" ? "Cloud aggiornato: scarica di nuovo l'ultima versione" : "Scarica subito l'ultima versione dal cloud";
     }
 
+    function getCloudStatusText(kind, message){
+      if(message) return message;
+      if(!isLoggedIn()) return "\u2601\uFE0F Cloud: non attivo";
+      if(kind === "ok"){
+        return "☁️ Cloud aggiornato: " + formatCloudDateTime(remoteLastCheckedAt) + "\nUltima modifica: " + formatCloudDateTime(remoteLastKnownUpdatedAt || (state && state.updatedAt));
+      }
+      if(kind === "syncing") return "\uD83D\uDD04 Cloud: aggiornamento in corso...";
+      if(kind === "pending") return "\u2601\uFE0F Cloud: controllo necessario prima delle modifiche";
+      if(kind === "locked") return "\uD83D\uDD04 Cloud: aggiorno i dati prima di permettere modifiche";
+      if(kind === "conflict") return "\u26A0\uFE0F Cloud: modifiche piu recenti da un altro dispositivo";
+      if(kind === "error") return "\u26A0\uFE0F Cloud: aggiornamento non riuscito";
+      return "\u2601\uFE0F Cloud: non verificato";
+    }
+
+    function getCloudCompactIndicator(kind){
+      if(kind === "ok") return "✓";
+      if(kind === "syncing" || kind === "pending" || kind === "locked") return "↻";
+      return "✕";
+    }
+
     function setCloudStatus(kind, message){
       kind = kind || "idle";
+      var statusText = getCloudStatusText(kind, message);
       if(cloudSyncStatus){
         cloudSyncStatus.setAttribute("data-state", kind);
-        if(message){
-          cloudSyncStatus.textContent = message;
-        }else if(!isLoggedIn()){
-          cloudSyncStatus.textContent = "\u2601\uFE0F Cloud: non attivo";
-        }else if(kind === "ok"){
-          cloudSyncStatus.textContent = "☁️ Cloud aggiornato: " + formatCloudDateTime(remoteLastCheckedAt) + "\nUltima modifica: " + formatCloudDateTime(remoteLastKnownUpdatedAt || (state && state.updatedAt));
-        }else if(kind === "syncing"){
-          cloudSyncStatus.textContent = "\uD83D\uDD04 Cloud: aggiornamento in corso...";
-        }else if(kind === "pending"){
-          cloudSyncStatus.textContent = "\u2601\uFE0F Cloud: controllo necessario prima delle modifiche";
-        }else if(kind === "locked"){
-          cloudSyncStatus.textContent = "\uD83D\uDD04 Cloud: aggiorno i dati prima di permettere modifiche";
-        }else if(kind === "conflict"){
-          cloudSyncStatus.textContent = "\u26A0\uFE0F Cloud: modifiche piu recenti da un altro dispositivo";
-        }else if(kind === "error"){
-          cloudSyncStatus.textContent = "\u26A0\uFE0F Cloud: aggiornamento non riuscito";
-        }else{
-          cloudSyncStatus.textContent = "\u2601\uFE0F Cloud: non verificato";
-        }
+      }
+      if(cloudSyncDetails){
+        cloudSyncDetails.textContent = statusText;
+      }
+      if(cloudSyncIndicator){
+        cloudSyncIndicator.textContent = getCloudCompactIndicator(kind);
+      }
+      if(cloudSyncCompactLabel){
+        cloudSyncCompactLabel.textContent = statusText.replace(/\s*\n\s*/g, ". ");
+      }
+      if(cloudSyncToggle){
+        cloudSyncToggle.title = cloudSyncStatus && cloudSyncStatus.classList.contains("isOpen") ? "Nascondi dettagli cloud" : "Mostra dettagli cloud";
       }
       setCloudButtonState(kind);
     }
@@ -721,6 +735,10 @@
 
     var storageStatus = $("#storageStatus");
     var cloudSyncStatus = $("#cloudSyncStatus");
+    var cloudSyncToggle = $("#cloudSyncToggle");
+    var cloudSyncIndicator = $("#cloudSyncIndicator");
+    var cloudSyncCompactLabel = $("#cloudSyncCompactLabel");
+    var cloudSyncDetails = $("#cloudSyncDetails");
     var btnCloudRefresh = $("#btnCloudRefresh");
     var favoriteNotesCard = $("#favoriteNotesCard");
     var favoriteNotesPreviewList = $("#favoriteNotesPreviewList");
@@ -3331,6 +3349,30 @@ todoActiveList.appendChild(item);
     if(alarmOverlay) alarmOverlay.addEventListener("click", function(ev){ if(ev.target === alarmOverlay) hideAlarmOverlay(); });
     btnPrintDay.addEventListener("click", printDay);
 
+    function setCloudStatusOpen(open){
+      if(!cloudSyncStatus || !cloudSyncToggle) return;
+      cloudSyncStatus.classList.toggle("isOpen", !!open);
+      cloudSyncToggle.setAttribute("aria-expanded", open ? "true" : "false");
+      cloudSyncToggle.title = open ? "Nascondi dettagli cloud" : "Mostra dettagli cloud";
+    }
+
+    if(cloudSyncToggle){
+      cloudSyncToggle.addEventListener("click", function(ev){
+        ev.stopPropagation();
+        var willOpen = !cloudSyncStatus.classList.contains("isOpen");
+        if(willOpen && settingsMenu && settingsMenu.classList.contains("isOpen")) setSettingsMenuOpen(false);
+        setCloudStatusOpen(willOpen);
+      });
+    }
+    if(cloudSyncStatus){
+      cloudSyncStatus.addEventListener("click", function(ev){
+        ev.stopPropagation();
+      });
+    }
+    document.addEventListener("click", function(){
+      if(cloudSyncStatus && cloudSyncStatus.classList.contains("isOpen")) setCloudStatusOpen(false);
+    });
+
     function setSettingsMenuOpen(open){
       if(!settingsMenu || !settingsToggle || !settingsPanel) return;
       settingsMenu.classList.toggle("isOpen", !!open);
@@ -3342,7 +3384,9 @@ todoActiveList.appendChild(item);
     if(settingsToggle){
       settingsToggle.addEventListener("click", function(ev){
         ev.stopPropagation();
-        setSettingsMenuOpen(!settingsMenu.classList.contains("isOpen"));
+        var willOpen = !settingsMenu.classList.contains("isOpen");
+        if(willOpen && cloudSyncStatus && cloudSyncStatus.classList.contains("isOpen")) setCloudStatusOpen(false);
+        setSettingsMenuOpen(willOpen);
       });
     }
     if(settingsPanel){
@@ -3354,9 +3398,14 @@ todoActiveList.appendChild(item);
       if(settingsMenu && !settingsMenu.contains(ev.target)) setSettingsMenuOpen(false);
     });
     document.addEventListener("keydown", function(ev){
-      if(ev.key === "Escape" && settingsMenu && settingsMenu.classList.contains("isOpen")){
+      if(ev.key !== "Escape") return;
+      if(settingsMenu && settingsMenu.classList.contains("isOpen")){
         setSettingsMenuOpen(false);
         settingsToggle.focus();
+      }
+      if(cloudSyncStatus && cloudSyncStatus.classList.contains("isOpen")){
+        setCloudStatusOpen(false);
+        if(cloudSyncToggle) cloudSyncToggle.focus();
       }
     });
 
