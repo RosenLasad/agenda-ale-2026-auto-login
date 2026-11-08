@@ -25,33 +25,21 @@
         <div class="headLeft">
           <div class="brandBlock">
             <h1 class="brandTitle">Agenda: </h1>
-            <div id="todayLine" class="todayLine"></div>
+            <button id="todayLine" class="todayLine" type="button" aria-controls="view-today" aria-pressed="false" title="Apri il pannello Oggi"></button>
           </div>
         </div>
 
         <div class="actionsBlock">
           <div class="actions">
             <button class="btn hidden" id="installBtn" type="button" title="Installa Agenda">Installa</button>
-            <div class="settingsMenu" id="settingsMenu">
-              <button class="btn iconBtn settingsToggle" id="settingsToggle" type="button" title="Impostazioni" aria-label="Apri impostazioni" aria-haspopup="true" aria-expanded="false" aria-controls="settingsPanel"><span class="ico" aria-hidden="true">⚙️</span></button>
-              <div class="settingsPanel" id="settingsPanel" role="group" aria-label="Impostazioni rapide" aria-hidden="true">
-                <button class="btn settingsAction" id="btnExport" type="button" title="Scarica un file JSON con tutti i dati" aria-label="Esporta JSON"><span class="ico" aria-hidden="true">📤</span><span class="settingsActionLabel">Esporta</span></button>
-                <span class="btn fileBtn settingsAction" title="Carica un file JSON esportato in precedenza"><span class="ico" aria-hidden="true">⬆️</span><span class="settingsActionLabel">Importa</span><input id="importFile" type="file" accept="application/json" aria-label="Importa JSON">
-                </span>
-                <button class="btn danger settingsAction" id="btnReset" type="button" title="Azzera tutto (fa anche un export)" aria-label="Reset"><span class="ico" aria-hidden="true">♻️</span><span class="settingsActionLabel">Reset</span></button>
-                <button class="btn settingsAction" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico" aria-hidden="true">☁️</span><span class="settingsActionLabel">Cloud</span></button>
-              </div>
-            </div>
+            <button class="btn iconBtn" id="btnExport" title="Scarica un file JSON con tutti i dati" aria-label="Esporta JSON"><span class="ico">📤</span></button>
+            <span class="btn fileBtn iconBtn" title="Carica un file JSON esportato in precedenza" aria-label="Importa JSON"><span class="ico">⬆️</span><input id="importFile" type="file" accept="application/json">
+            </span>
+            <button class="btn danger iconBtn" id="btnReset" title="Azzera tutto (fa anche un export)" aria-label="Reset"><span class="ico">♻️</span></button>
+            <button class="btn iconBtn" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico">☁️</span></button>
             <button class="btn" id="loginBtn">Login</button>
           </div>
-          <div class="cloudSyncStatus" id="cloudSyncStatus" data-state="idle">
-            <button class="cloudSyncCompact" id="cloudSyncToggle" type="button" aria-expanded="false" aria-controls="cloudSyncDetails" title="Mostra dettagli cloud">
-              <span class="cloudSyncCloud" aria-hidden="true">☁️</span>
-              <span class="cloudSyncIndicator" id="cloudSyncIndicator" aria-hidden="true">✕</span>
-              <span class="srOnly" id="cloudSyncCompactLabel">Cloud: non verificato</span>
-            </button>
-            <div class="cloudSyncDetails" id="cloudSyncDetails" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
-          </div>
+          <div class="cloudSyncStatus" id="cloudSyncStatus" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
         </div>
       </div>
 
@@ -102,23 +90,6 @@
               </svg>
             </span>
             <span class="tabText">Rubrica</span>
-          </div>
-          <div class="tab bookmarkTab bookmarkTab--today" data-view="today" role="button" tabindex="0" aria-label="Oggi" title="Oggi">
-            <span class="tabPin" aria-hidden="true"></span>
-            <span class="tabIcon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="12" cy="12" r="6.5"></circle>
-                <path d="M12 2.8V5.2"></path>
-                <path d="M12 18.8V21.2"></path>
-                <path d="M2.8 12H5.2"></path>
-                <path d="M18.8 12H21.2"></path>
-                <path d="M5.4 5.4L7.1 7.1"></path>
-                <path d="M16.9 16.9L18.6 18.6"></path>
-                <path d="M16.9 7.1L18.6 5.4"></path>
-                <path d="M5.4 18.6L7.1 16.9"></path>
-              </svg>
-            </span>
-            <span class="tabText">Oggi</span>
           </div>
           <div class="tab bookmarkTab bookmarkTab--actions" data-view="actions" role="button" tabindex="0" aria-label="Azioni" title="Azioni"><span class="tabPin" aria-hidden="true"></span><span class="tabIcon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M4 12.5L9 17.5L20 6.5"></path><path d="M5 4.5H15"></path><path d="M5 8.5H11"></path><path d="M5 20H19"></path></svg></span><span class="tabText">Azioni</span></div>
         </div>
