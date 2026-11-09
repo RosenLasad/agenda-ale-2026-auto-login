@@ -3356,6 +3356,42 @@ todoActiveList.appendChild(item);
     }
 
     // Wire
+    var settingsMenu = $("#settingsMenu");
+    var btnSettings = $("#btnSettings");
+    var settingsDropdown = $("#settingsDropdown");
+    var btnImport = $("#btnImport");
+    if(settingsMenu && btnSettings && settingsDropdown){
+      function closeSettingsMenu(restoreFocus){
+        settingsDropdown.hidden = true;
+        btnSettings.setAttribute("aria-expanded", "false");
+        if(restoreFocus) btnSettings.focus();
+      }
+      btnSettings.addEventListener("click", function(){
+        settingsDropdown.hidden = !settingsDropdown.hidden;
+        btnSettings.setAttribute("aria-expanded", String(!settingsDropdown.hidden));
+      });
+      settingsDropdown.addEventListener("click", function(ev){
+        var command = ev.target.closest("button");
+        if(command && settingsDropdown.contains(command)) closeSettingsMenu(true);
+      }, true);
+      document.addEventListener("click", function(ev){
+        if(!settingsMenu.contains(ev.target)) closeSettingsMenu(false);
+      });
+      document.addEventListener("keydown", function(ev){
+        if(ev.key === "Escape" && !settingsDropdown.hidden){
+          ev.preventDefault();
+          closeSettingsMenu(true);
+        }
+      });
+      document.addEventListener("focusin", function(ev){
+        if(!settingsMenu.contains(ev.target)) closeSettingsMenu(false);
+      });
+      window.addEventListener("agenda-session-changed", function(){ closeSettingsMenu(false); });
+    }
+    if(btnImport && importFile){
+      btnImport.addEventListener("click", function(){ importFile.click(); });
+    }
+
     if(cloudSyncStatus && cloudStatusDetails){
       function closeCloudDetails(){
         cloudStatusDetails.hidden = true;

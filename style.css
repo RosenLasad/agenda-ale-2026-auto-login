@@ -3946,3 +3946,44 @@ button.cloudSyncStatus:focus-visible{ outline:2px solid currentColor; outline-of
 /* Lascia uscire il riquadro dei dettagli dai bordi della testata. */
 .wrap > header{ overflow:visible; z-index:6; }
 .wrap > header::before{ border-radius:inherit; }
+
+/* Comandi in testata: gestione dati sopra, sincronizzazione sotto. */
+.actionsBlock > .actions{ z-index:3; }
+.settingsMenu{ position:relative; flex:0 0 auto; }
+.settingsToggle .ico{ font-family:Arial,sans-serif; font-size:22px; line-height:1; }
+.settingsDropdown{
+  position:absolute;
+  top:calc(100% + 8px);
+  right:0;
+  z-index:200;
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  box-sizing:border-box;
+  width:184px;
+  max-width:calc(100vw - 32px);
+  padding:8px;
+  border:1px solid rgba(226,205,171,.4);
+  border-radius:12px;
+  background:#272329;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+}
+.settingsDropdown[hidden]{ display:none; }
+.settingsDropdown > .btn{
+  width:100%;
+  justify-content:flex-start;
+  padding:11px 10px;
+  min-height:40px;
+  font-size:12px;
+  white-space:nowrap;
+  text-align:left;
+}
+.cloudStatusRow{ display:flex; align-items:center; justify-content:flex-end; gap:6px; max-width:100%; }
+.cloudStatusRow .cloudStatusWrap{ align-self:center; min-width:0; }
+.cloudStatusRow #btnCloudRefresh{ flex:0 0 auto; }
+:root[data-theme="light"] .settingsDropdown{ background:#fff9ef; }
+.settingsToggle:focus-visible, .settingsDropdown .btn:focus-visible{ outline:2px solid currentColor; outline-offset:3px; }
+@media (max-width:640px){
+  .cloudStatusRow{ gap:5px; }
+  .settingsToggle .ico{ font-size:21px; }
+}

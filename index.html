@@ -32,22 +32,29 @@
         <div class="actionsBlock">
           <div class="actions">
             <button class="btn hidden" id="installBtn" type="button" title="Installa Agenda">Installa</button>
-            <button class="btn iconBtn" id="btnExport" title="Scarica un file JSON con tutti i dati" aria-label="Esporta JSON"><span class="ico">📤</span></button>
-            <span class="btn fileBtn iconBtn" title="Carica un file JSON esportato in precedenza" aria-label="Importa JSON"><span class="ico">⬆️</span><input id="importFile" type="file" accept="application/json">
-            </span>
-            <button class="btn danger iconBtn" id="btnReset" title="Azzera tutto (fa anche un export)" aria-label="Reset"><span class="ico">♻️</span></button>
-            <button class="btn iconBtn" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico">☁️</span></button>
+            <div class="settingsMenu" id="settingsMenu">
+              <button class="btn iconBtn settingsToggle" id="btnSettings" type="button" aria-label="Gestione dati" title="Gestione dati" aria-expanded="false" aria-controls="settingsDropdown"><span class="ico" aria-hidden="true">⚙︎</span></button>
+              <div class="settingsDropdown" id="settingsDropdown" role="group" aria-label="Gestione dati" hidden>
+                <button class="btn" id="btnExport" type="button" title="Scarica un file JSON con tutti i dati"><span aria-hidden="true">📤</span> Esporta JSON</button>
+                <button class="btn" id="btnImport" type="button" title="Carica un file JSON esportato in precedenza"><span aria-hidden="true">⬆️</span> Importa JSON</button>
+                <input id="importFile" type="file" accept="application/json" hidden>
+                <button class="btn danger" id="btnReset" type="button" title="Azzera tutto (fa anche un export)"><span aria-hidden="true">♻️</span> Azzera tutto</button>
+              </div>
+            </div>
             <button class="btn" id="loginBtn">Login</button>
           </div>
-          <div class="cloudStatusWrap">
-            <div role="status" aria-live="polite">
-              <button class="cloudSyncStatus" id="cloudSyncStatus" type="button" data-state="idle" aria-expanded="false" aria-controls="cloudStatusDetails" aria-label="Cloud non verificato. Mostra dettagli" title="Cloud non verificato">
-                <span class="cloudStatusIcon" aria-hidden="true">☁️</span>
-                <span class="cloudStatusText">Non verificato</span>
-                <span class="cloudStatusMeta" aria-hidden="true"></span>
-              </button>
+          <div class="cloudStatusRow">
+            <button class="btn iconBtn" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Aggiorna cloud"><span class="ico">☁️</span></button>
+            <div class="cloudStatusWrap">
+              <div role="status" aria-live="polite">
+                <button class="cloudSyncStatus" id="cloudSyncStatus" type="button" data-state="idle" aria-expanded="false" aria-controls="cloudStatusDetails" aria-label="Cloud non verificato. Mostra dettagli" title="Cloud non verificato">
+                  <span class="cloudStatusIcon" aria-hidden="true">☁️</span>
+                  <span class="cloudStatusText">Non verificato</span>
+                  <span class="cloudStatusMeta" aria-hidden="true"></span>
+                </button>
+              </div>
+              <div class="cloudStatusDetails" id="cloudStatusDetails" role="region" aria-label="Dettagli sincronizzazione cloud" hidden>Cloud non verificato.</div>
             </div>
-            <div class="cloudStatusDetails" id="cloudStatusDetails" role="region" aria-label="Dettagli sincronizzazione cloud" hidden>Cloud non verificato.</div>
           </div>
         </div>
       </div>
