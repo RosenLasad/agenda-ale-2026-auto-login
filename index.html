@@ -37,6 +37,7 @@
               <div class="settingsDropdown" id="settingsDropdown" role="group" aria-label="Gestione dati" hidden>
                 <button class="btn" id="btnExport" type="button" title="Scarica un file JSON con tutti i dati"><span aria-hidden="true">📤</span> Esporta JSON</button>
                 <button class="btn" id="btnImport" type="button" title="Carica un file JSON esportato in precedenza"><span aria-hidden="true">⬆️</span> Importa JSON</button>
+                <button class="btn" id="btnLocalBackups" type="button">Backup locali</button>
                 <input id="importFile" type="file" accept="application/json" hidden>
                 <button class="btn danger" id="btnReset" type="button" title="Azzera tutto (fa anche un export)"><span aria-hidden="true">♻️</span> Azzera tutto</button>
               </div>
@@ -775,6 +776,26 @@
     </div>
   </div>
 
+  <div class="overlay safetyOverlay" id="syncConflictOverlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="syncConflictTitle">
+    <div class="modal safetyModal">
+      <div class="modalHeader"><h2 id="syncConflictTitle">Quale versione vuoi conservare?</h2></div>
+      <div class="modalBody safetyBody">
+        <p>Ci sono modifiche diverse sul dispositivo e nel cloud. Entrambe le versioni sono conservate in “Backup locali”.</p>
+        <p><strong>Questo dispositivo:</strong> <span id="syncLocalSummary"></span></p>
+        <p><strong>Cloud:</strong> <span id="syncRemoteSummary"></span></p>
+        <button class="btn primary" id="syncKeepLocal" type="button">Conserva le modifiche di questo dispositivo</button>
+        <button class="btn" id="syncUseRemote" type="button">Usa la versione cloud</button>
+        <button class="btn" id="syncLater" type="button">Decidi più tardi</button>
+      </div>
+    </div>
+  </div>
+  <div class="overlay safetyOverlay" id="recoveryOverlay" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="recoveryTitle">
+    <div class="modal safetyModal">
+      <div class="modalHeader"><h2 id="recoveryTitle">Backup locali</h2><button class="btn" id="closeRecovery" type="button">Chiudi</button></div>
+      <div class="modalBody safetyBody"><p>Scarica una copia e usa “Importa JSON” per ripristinarla. Sono conservate le ultime otto copie di questo account.</p><div id="recoveryList" class="recoveryList"></div></div>
+    </div>
+  </div>
+
   <script src="https://identity.netlify.com/v1/netlify-identity-widget.js"></script>
   <script src="oggi/today-data-core.js"></script>
   <script src="oggi/today-data-2026-04.js"></script>
@@ -788,6 +809,7 @@
   <script src="oggi/today-data-2026-12.js"></script>
   <script src="oggi/today-utils.js"></script>
   <script src="oggi/today-view.js"></script>
+  <script src="state-validation.js"></script>
   <script src="app.js"></script>
   <script src="actions.js"></script>
   <script src="account.js"></script>

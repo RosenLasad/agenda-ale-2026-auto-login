@@ -1,27 +1,10 @@
-import crypto from "node:crypto";
 import { getStore } from "@netlify/blobs";
 import webpush from "web-push";
 
-const REGISTRY_KEY = "push-registry-v1";
-const DELIVERIES_KEY = "push-deliveries-v1";
+import { readAccount, accountPrefix, pushPrefix, digest, strong, checkedSetJSON } from "../lib/state-store.mjs";
 const TIME_ZONE = "Europe/Rome";
 const LOOKBACK_MS = 30 * 60 * 1000;
 const LOOKAHEAD_MS = 30 * 1000;
-const KEEP_DELIVERIES_MS = 14 * 24 * 60 * 60 * 1000;
-
-function getUpdatedAtMillis(value) {
-  const parsed = Date.parse(value?.updatedAt || "");
-  return Number.isFinite(parsed) ? parsed : 0;
-}
-
-async function loadBestState(store, aliases) {
-  const candidates = await Promise.all((aliases || []).map(async (alias) => ({
-    data: await store.get(`state-v1-${alias}`, { type: "json", consistency: "strong" })
-  })));
-  return candidates
-    .filter((item) => item.data && typeof item.data === "object")
-    .sort((a, b) => getUpdatedAtMillis(b.data) - getUpdatedAtMillis(a.data))[0]?.data || null;
-}
 
 function zonedLocalToUtc(dateISO, time) {
   const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(dateISO || ""));
@@ -78,10 +61,6 @@ function alarmCandidate(dateISO, event) {
   return { dateISO, event, fireAt, alarmKey, occurrenceKey, offset };
 }
 
-function endpointKey(endpoint) {
-  return crypto.createHash("sha256").update(String(endpoint)).digest("hex").slice(0, 24);
-}
-
 function notificationPayload(candidate, siteUrl) {
   const event = candidate.event;
   const url = new URL("/", siteUrl || "https://digenda.app");
@@ -109,67 +88,42 @@ export default async () => {
   webpush.setVapidDetails(subject, publicKey, privateKey);
 
   const store = getStore("agenda-ale");
-  const registry = (await store.get(REGISTRY_KEY, { type: "json", consistency: "strong" })) || { users: {} };
-  const deliveries = (await store.get(DELIVERIES_KEY, { type: "json", consistency: "strong" })) || { sent: {} };
-  if (!deliveries.sent || typeof deliveries.sent !== "object") deliveries.sent = {};
-
-  const now = Date.now();
-  const lowerBound = now - LOOKBACK_MS;
-  const upperBound = now + LOOKAHEAD_MS;
-  let sentCount = 0;
-  let registryChanged = false;
-
-  for (const entry of Object.values(registry.users || {})) {
-    const state = await loadBestState(store, entry.aliases || []);
-    if (!state?.events) continue;
-
-    const due = [];
-    for (const [dateISO, events] of Object.entries(state.events)) {
-      for (const event of Array.isArray(events) ? events : []) {
-        const candidate = alarmCandidate(dateISO, event);
-        if (!candidate) continue;
-        const fireTime = candidate.fireAt.getTime();
-        if (fireTime >= lowerBound && fireTime <= upperBound) due.push(candidate);
+  const now=Date.now();
+  let sentCount=0;
+  const states=new Map();
+  for await(const page of store.list({prefix:"push-v2/",paginate:true})){
+    for(const blob of page.blobs){
+      if(!/^push-v2\/[^/]+\/[^/]+$/.test(blob.key))continue;
+      const entry=await store.get(blob.key,strong);
+      if(!entry?.ownerId || !entry.subscription || !blob.key.startsWith(pushPrefix(entry.ownerId)))continue;
+      if(!states.has(entry.ownerId)){
+        try{states.set(entry.ownerId,(await readAccount(store,entry.ownerId)).data?.state);}
+        catch(error){console.error("Archivio sveglie non leggibile",error.message);states.set(entry.ownerId,null);}
       }
-    }
-
-    const activeSubscriptions = [];
-    for (const subscription of entry.subscriptions || []) {
-      let keepSubscription = true;
-      for (const candidate of due) {
-        const deliveryKey = `${candidate.occurrenceKey}|${endpointKey(subscription.endpoint)}`;
-        if (deliveries.sent[deliveryKey]) continue;
-        try {
-          await webpush.sendNotification(subscription, notificationPayload(candidate, process.env.URL));
-          deliveries.sent[deliveryKey] = new Date().toISOString();
-          sentCount += 1;
-        } catch (error) {
-          if (error?.statusCode === 404 || error?.statusCode === 410) {
-            keepSubscription = false;
-            registryChanged = true;
-            break;
+      const state=states.get(entry.ownerId);
+      if(!state?.events)continue;
+      const subscription=entry.subscription;
+      for(const [dateISO,events] of Object.entries(state.events)){
+        for(const event of events){
+          const candidate=alarmCandidate(dateISO,event);
+          if(!candidate || candidate.fireAt.getTime()<now-LOOKBACK_MS || candidate.fireAt.getTime()>now+LOOKAHEAD_MS)continue;
+          const deliveryKey=`${accountPrefix(entry.ownerId)}deliveries/${digest(candidate.occurrenceKey+"|"+subscription.endpoint)}`;
+          const existing=await store.getWithMetadata(deliveryKey,strong);
+          if(existing && (existing.data.sent || now-Date.parse(existing.data.claimedAt)<120000))continue;
+          const claim=await checkedSetJSON(store,deliveryKey,{claimedAt:new Date(now).toISOString()},existing?{onlyIfMatch:existing.etag}:{onlyIfNew:true});
+          if(!claim.modified)continue;
+          try{
+            await webpush.sendNotification(subscription,notificationPayload(candidate,process.env.URL));
+            await store.setJSON(deliveryKey,{sent:true,claimedAt:new Date(now).toISOString()});
+            sentCount++;
+          }catch(error){
+            await store.delete(deliveryKey);
+            if(error?.statusCode===404 || error?.statusCode===410)await store.delete(blob.key);
+            else console.error("Invio Web Push non riuscito",error?.statusCode,error?.message);
           }
-          console.error("Invio Web Push non riuscito", error?.statusCode || "", error?.message || error);
         }
       }
-      if (keepSubscription) activeSubscriptions.push(subscription);
     }
-    entry.subscriptions = activeSubscriptions;
-  }
-
-  for (const [key, value] of Object.entries(deliveries.sent)) {
-    const sentAt = Date.parse(value);
-    if (!Number.isFinite(sentAt) || sentAt < now - KEEP_DELIVERIES_MS) delete deliveries.sent[key];
-  }
-  deliveries.updatedAt = new Date().toISOString();
-  await store.setJSON(DELIVERIES_KEY, deliveries);
-
-  if (registryChanged) {
-    for (const [key, entry] of Object.entries(registry.users || {})) {
-      if (!(entry.subscriptions || []).length) delete registry.users[key];
-    }
-    registry.updatedAt = new Date().toISOString();
-    await store.setJSON(REGISTRY_KEY, registry);
   }
 
   return Response.json({ ok: true, sent: sentCount });

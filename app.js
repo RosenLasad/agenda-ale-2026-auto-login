@@ -25,10 +25,98 @@
 
     function persistLocalState(){
       if(STORAGE_KEY && sessionIsCurrent(sessionGeneration)){
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheRecord()));
       }
     }
 
+
+    var localDirty = false;
+    var localBaseRevision = null;
+    var remoteRevision = null;
+    var syncMetadataKnown = false;
+    var cloudReady = false;
+    var localChangeSequence = 0;
+    var remoteSaveInFlight = false;
+    var remoteSaveAgain = false;
+    var pendingConflict = null;
+    var memoryRecovery = [];
+
+    function clone(value){ return JSON.parse(JSON.stringify(value)); }
+    function getSnapshot(){
+      var snapshot=clone(state);
+      if(snapshot.actions == null && window.AgendaActions) snapshot.actions=window.AgendaActions.exportState();
+      return snapshot;
+    }
+    function contentSignature(value){
+      var copy=clone(value); delete copy.updatedAt;
+      function ordered(v){
+        if(Array.isArray(v))return v.map(ordered);
+        if(v && typeof v === "object"){var out={};Object.keys(v).sort().forEach(function(k){out[k]=ordered(v[k]);});return out;}
+        return v;
+      }
+      return JSON.stringify(ordered(copy));
+    }
+    function cacheRecord(){
+      var cached=clone(state);
+      cached._localSync={dirty:localDirty,baseRevision:localBaseRevision,revision:remoteRevision,baseUpdatedAt:remoteLastKnownUpdatedAt};
+      return cached;
+    }
+    function readSyncMetadata(){
+      var meta=null;
+      try{var cached=STORAGE_KEY && JSON.parse(localStorage.getItem(STORAGE_KEY)||"null");meta=cached && cached._localSync;}catch(e){}
+      syncMetadataKnown=!!meta;
+      localDirty=!!(meta && meta.dirty);
+      localBaseRevision=meta ? meta.baseRevision : null;
+      remoteRevision=meta ? meta.revision : null;
+      remoteLastKnownUpdatedAt=meta ? meta.baseUpdatedAt : null;
+      cloudReady=false; localChangeSequence=0; remoteSaveInFlight=false; remoteSaveAgain=false; pendingConflict=null;
+    }
+    function markLocalDirty(){
+      if(!localDirty) localBaseRevision=remoteRevision;
+      localDirty=true; localChangeSequence++;
+    }
+    function downloadJSON(value,prefix){
+      var blob=new Blob([JSON.stringify(value,null,2)],{type:"application/json"});
+      var url=URL.createObjectURL(blob),a=document.createElement("a");
+      a.href=url;a.download=(prefix||"agenda-backup")+"-"+new Date().toISOString().slice(0,19).replace(/:/g,"-")+".json";
+      document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},250);
+    }
+    function recoveryCopies(){
+      if(!STORAGE_KEY)return memoryRecovery;
+      return JSON.parse(localStorage.getItem(STORAGE_KEY+":recovery")||"[]");
+    }
+    function saveRecovery(reason,snapshot){
+      var copies=recoveryCopies();
+      copies.unshift({at:new Date().toISOString(),reason:reason,state:clone(snapshot||getSnapshot())});
+      copies=copies.slice(0,8);
+      if(STORAGE_KEY)localStorage.setItem(STORAGE_KEY+":recovery",JSON.stringify(copies));else memoryRecovery=copies;
+    }
+    function refreshActions(){ window.dispatchEvent(new CustomEvent("agenda-data-changed")); }
+    function describeSnapshot(value){
+      return Object.values(value.events||{}).reduce(function(n,items){return n+items.length;},0)+" eventi, "+(value.todos||[]).length+" cose da fare, "+(value.notes.items||[]).length+" note";
+    }
+    function showSyncConflict(remote,revision){
+      if(!pendingConflict){
+        saveRecovery("Modifiche locali prima del confronto cloud",getSnapshot());
+        if(remote)saveRecovery("Versione cloud prima del confronto",remote);
+      }
+      pendingConflict={remote:remote,revision:revision};
+      setCloudWriteLock(true);setCloudStatus("conflict","Due versioni da confrontare. Tocca Aggiorna cloud per scegliere; entrambe restano conservate.");
+      var panel=$("#syncConflictOverlay");
+      if(panel){
+        $("#syncLocalSummary").textContent=describeSnapshot(getSnapshot());
+        $("#syncRemoteSummary").textContent=remote?describeSnapshot(remote):"Archivio cloud vuoto";
+        panel.style.display="flex";panel.setAttribute("aria-hidden","false");
+        $("#syncKeepLocal").focus();
+      }
+    }
+    function hideSyncConflict(){var panel=$("#syncConflictOverlay");if(panel){panel.style.display="none";panel.setAttribute("aria-hidden","true");}}
+    function canReplaceData(){
+      if(isLoggedIn() && (!cloudReady || remoteWriteLocked || pendingConflict || remoteSaveInFlight)){
+        window.alert("Attendi il completamento della sincronizzazione o risolvi il confronto cloud prima di importare o azzerare.");return false;
+      }
+      return true;
+    }
 
     var MONTHS_IT = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
     var DOW_IT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -350,6 +438,8 @@
       if(!Array.isArray(next.todos)) next.todos = [];
       next.notes = normalizeNotesState(next.notes);
       if(!Array.isArray(next.contacts)) next.contacts = [];
+      delete next._localSync;
+      if(next.actions === undefined) next.actions = null;
       next.updatedAt = next.updatedAt || new Date().toISOString();
       return next;
     }
@@ -361,7 +451,8 @@
         events:{},
         todos:[],
         notes: normalizeNotesState(null),
-        contacts:[]
+        contacts:[],
+        actions:null
       };
     }
 
@@ -578,7 +669,8 @@
         headers: { "content-type":"application/json" },
         body: JSON.stringify({
           state: payload,
-          baseUpdatedAt: remoteLastKnownUpdatedAt || null
+          baseUpdatedAt: remoteLastKnownUpdatedAt || null,
+          baseRevision: remoteRevision || null
         })
       });
 
@@ -590,6 +682,7 @@
         conflict.conflict = true;
         conflict.remoteUpdatedAt = obj && obj.remoteUpdatedAt;
         conflict.remoteData = obj && obj.data;
+        conflict.revision = obj && obj.revision;
         throw conflict;
       }
       if(!res.ok) throw new Error((obj && (obj.message || obj.error)) || "Remote save failed");
@@ -603,6 +696,7 @@
           Object.keys(s.events || {}).length ||
           (s.todos || []).length ||
           (s.contacts || []).length ||
+          (s.actions && s.actions.items && s.actions.items.length) ||
           (notesState.items || []).length ||
           String(notesState.draftTitle || "").trim().length ||
           String(notesState.draftBody || "").trim().length
@@ -617,16 +711,21 @@
 
     function applyRemoteState(remote){
       if(!remote || typeof remote !== "object") return false;
-      state = normalizeLoadedState(remote);
+      window.AgendaStateValidation.validateState(remote);
+      state = normalizeLoadedState(clone(remote));
+      localDirty = false; localBaseRevision = null;
       remoteLastKnownUpdatedAt = state.updatedAt || remoteLastKnownUpdatedAt;
       try{ persistLocalState(); }catch(e){}
       syncNotesUiFromState();
+      refreshActions();
       renderAll();
       updateStorageStatus(true);
       return true;
     }
 
     async function syncFromCloudOrSeed(forcePull, mandatory){
+      if(pendingConflict){ if(mandatory)showSyncConflict(pendingConflict.remote,pendingConflict.revision); return; }
+      if(remoteSaveInFlight){ if(mandatory){setCloudWriteLock(false);setCloudStatus("syncing");} return; }
       if(!isLoggedIn()){
         setCloudWriteLock(false);
         setCloudStatus("idle", "\u2601\uFE0F Cloud: non attivo");
@@ -653,30 +752,37 @@
         }
 
         remoteLastCheckedAt = new Date().toISOString();
-        var remote = envelope ? envelope.data : null;
-        var localStamp = getStateUpdatedAt(state);
-        var remoteStamp = getStateUpdatedAt(remote);
-
-        if(remote && typeof remote === "object"){
-          remoteLastKnownUpdatedAt = remote.updatedAt || null;
-          if(forcePull || remoteStamp > localStamp){
-            applyRemoteState(remote);
+        var remote=envelope ? envelope.data : null;
+        var revision=envelope ? envelope.revision : null;
+        var firstCloudRead=!cloudReady,previousRevision=remoteRevision;
+        if(remote)window.AgendaStateValidation.validateState(remote);
+        cloudReady=true;
+        // La vecchia cache di questo account può contenere modifiche offline.
+        if(!syncMetadataKnown && STORAGE_KEY && localStorage.getItem(STORAGE_KEY) && hasLocalData(state) && (!remote || getStateUpdatedAt(state)>getStateUpdatedAt(remote))) markLocalDirty();
+        syncMetadataKnown=true;
+        if(localDirty){
+          if(remote && contentSignature(getSnapshot())===contentSignature(normalizeLoadedState(clone(remote)))){
+            remoteRevision=revision;applyRemoteState(remote);setCloudWriteLock(false);setCloudStatus("ok");finishInitialSessionRoute();return;
           }
-          finishInitialSessionRoute();
-          setCloudWriteLock(false);
-          setCloudStatus("ok");
-          return;
+          if(localBaseRevision===revision){
+            remoteRevision=revision;remoteLastKnownUpdatedAt=remote && remote.updatedAt;
+            setCloudWriteLock(false);persistLocalState();finishInitialSessionRoute();scheduleRemoteSave(true);return;
+          }
+          showSyncConflict(remote,revision);return;
         }
-
-        remoteLastKnownUpdatedAt = null;
-        finishInitialSessionRoute();
-        if(hasLocalData(state)){
-          setCloudStatus("syncing", "\uD83D\uDD04 Cloud: primo salvataggio in corso...");
-          scheduleRemoteSave(true, true);
+        remoteRevision=revision;
+        remoteLastKnownUpdatedAt=remote ? remote.updatedAt : null;
+        if(remote){
+          // Recupera le Azioni locali già separate per questo account solo se il cloud non le ha ancora.
+          var localActions=remote.actions == null && window.AgendaActions && window.AgendaActions.hasStoredData() ? window.AgendaActions.exportState() : null;
+          if(firstCloudRead || revision!==previousRevision)applyRemoteState(remote);
+          if(localActions){state.actions=localActions;markLocalDirty();refreshActions();persistLocalState();}
         }else{
-          setCloudStatus("ok");
+          if(state.actions == null && window.AgendaActions && window.AgendaActions.hasStoredData())state.actions=window.AgendaActions.exportState();
+          if(hasLocalData(state))markLocalDirty();
         }
-        setCloudWriteLock(false);
+        finishInitialSessionRoute();setCloudWriteLock(false);persistLocalState();
+        if(localDirty)scheduleRemoteSave(true);else setCloudStatus("ok");
       }catch(e){
         if(!sessionIsCurrent(generation)) return;
         console.warn("Sync cloud fallita:", e);
@@ -691,47 +797,37 @@
       }
     }
 
-    function scheduleRemoteSave(immediate, allowWhileLocked){
-      if(!isLoggedIn()) return;
-      if(remoteWriteLocked && !allowWhileLocked){
-        setCloudStatus("locked", "\uD83D\uDD04 Cloud: attendo l'aggiornamento iniziale prima di salvare.");
-        return;
-      }
-      if(remoteSaveTimer) clearTimeout(remoteSaveTimer);
-      var generation = sessionGeneration;
-      remoteSaveTimer = setTimeout(function(){
-        remoteSaveTimer = null;
-        if(!sessionIsCurrent(generation) || !isLoggedIn()) return;
-        var payload = normalizeLoadedState(JSON.parse(JSON.stringify(state)));
-        payload.updatedAt = new Date().toISOString();
-        state.updatedAt = payload.updatedAt;
-        setCloudStatus("syncing", "\uD83D\uDD04 Cloud: salvataggio in corso...");
+    function scheduleRemoteSave(immediate){
+      if(!isLoggedIn() || !cloudReady || pendingConflict || remoteWriteLocked || !localDirty)return;
+      if(remoteSaveInFlight){remoteSaveAgain=true;return;}
+      if(remoteSaveTimer)clearTimeout(remoteSaveTimer);
+      var generation=sessionGeneration;
+      remoteSaveTimer=setTimeout(function(){
+        remoteSaveTimer=null;
+        if(!sessionIsCurrent(generation) || !isLoggedIn() || !localDirty || pendingConflict || remoteWriteLocked)return;
+        if(remoteSaveInFlight){remoteSaveAgain=true;return;}
+        var sequence=localChangeSequence,payload=getSnapshot();
+        remoteSaveInFlight=true;remoteSaveAgain=false;
+        setCloudStatus("syncing");
         saveRemoteState(payload).then(function(result){
-          if(!sessionIsCurrent(generation)) return;
-          if(result && result.unauthorized){
-            setCloudStatus("idle", "\u2601\uFE0F Cloud: accesso richiesto");
-            promptCloudLogin("La sessione cloud è scaduta. Accedi di nuovo per salvare nel cloud.");
-            return;
-          }
-          var savedAt = (result && result.updatedAt) || payload.updatedAt;
-          state.updatedAt = savedAt;
-          remoteLastKnownUpdatedAt = savedAt;
-          remoteLastCheckedAt = new Date().toISOString();
-          try{ persistLocalState(); }catch(e){}
-          updateStorageStatus(true);
-          setCloudStatus("ok");
-        }).catch(function(e){
-          if(!sessionIsCurrent(generation)) return;
-          console.warn("Salvataggio cloud fallito:", e);
-          if(e && e.conflict){
-            if(e.remoteUpdatedAt) remoteLastKnownUpdatedAt = e.remoteUpdatedAt;
-            setCloudStatus("conflict", "\u26A0\uFE0F Cloud piu recente su un altro dispositivo. Premi il pulsante cloud per aggiornare prima di salvare.");
-            window.alert("Nel cloud ci sono modifiche piu recenti fatte da un altro dispositivo. Aggiorna dal pulsante cloud prima di continuare, cosi eviti di sovrascrivere dati nuovi.");
-          }else{
-            setCloudStatus("error");
-          }
+          if(!sessionIsCurrent(generation))return;
+          if(result.unauthorized){setCloudStatus("error","Accesso scaduto. Modifiche conservate su questo dispositivo.");promptCloudLogin();return;}
+          remoteRevision=result.revision;
+          remoteLastKnownUpdatedAt=result.updatedAt;remoteLastCheckedAt=new Date().toISOString();
+          if(sequence===localChangeSequence){localDirty=false;localBaseRevision=null;state.updatedAt=result.updatedAt;}
+          else localBaseRevision=remoteRevision;
+          persistLocalState();updateStorageStatus(true);
+          setCloudStatus(localDirty?"pending":"ok");
+        }).catch(function(error){
+          if(!sessionIsCurrent(generation))return;
+          if(error.conflict)showSyncConflict(error.remoteData,error.revision);
+          else{persistLocalState();setCloudStatus("error","Invio non riuscito. Le modifiche restano conservate su questo dispositivo.");}
+        }).finally(function(){
+          if(!sessionIsCurrent(generation))return;
+          remoteSaveInFlight=false;
+          if(localDirty && remoteSaveAgain && !pendingConflict)scheduleRemoteSave();
         });
-      }, immediate ? 0 : REMOTE_SYNC_DEBOUNCE_MS);
+      },immediate?0:REMOTE_SYNC_DEBOUNCE_MS);
     }
 
     function startRemotePolling(){
@@ -2108,7 +2204,9 @@ if(openTodosBtn){
         window.alert("Agenda sta aggiornando il cloud. Aspetta che compaia 'Cloud aggiornato', poi modifica di nuovo.");
         return;
       }
+      markLocalDirty();
       state.updatedAt = new Date().toISOString();
+      try{persistLocalState();}catch(e){updateStorageStatus(false);}
       if(saveTimer) clearTimeout(saveTimer);
       var generation = sessionGeneration;
       saveTimer = setTimeout(function(){
@@ -3287,63 +3385,42 @@ todoActiveList.appendChild(item);
     }
 
     // Export / Import / Reset
-    function exportJSON(){
-      try{
-        var data = JSON.stringify(state, null, 2);
-        var blob = new Blob([data], { type:"application/json" });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement("a");
-        var stamp = new Date().toISOString().slice(0,19).replace(/:/g,"-");
-        a.href = url;
-        a.download = "agenda-backup-"+stamp+".json";
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        setTimeout(function(){ URL.revokeObjectURL(url); }, 250);
-      }catch(e){}
-    }
+    function exportJSON(){ downloadJSON(getSnapshot(),"agenda-backup"); }
 
     function importJSON(e){
-      var file = e.target.files && e.target.files[0];
-      if(!file) return;
-
-      var generation = sessionGeneration;
-      var reader = new FileReader();
-      reader.onload = function(){
-        if(!sessionIsCurrent(generation)){ importFile.value = ""; return; }
+      var file=e.target.files && e.target.files[0];
+      if(!file)return;
+      if(!canReplaceData()){importFile.value="";return;}
+      var generation=sessionGeneration,reader=new FileReader();
+      reader.onload=function(){
+        if(!sessionIsCurrent(generation)){importFile.value="";return;}
         try{
-          var obj = JSON.parse(String(reader.result || ""));
-          if(!obj || typeof obj !== "object") throw new Error("invalid");
-
-          state = normalizeLoadedState(obj);
-          state.updatedAt = new Date().toISOString();
-
-          persistLocalState();
-          syncNotesUiFromState();
-
-          renderAll();
-          updateStorageStatus(true);
-          if(isLoggedIn()) scheduleRemoteSave();
-        }catch(err){
-          updateStorageStatus(false);
-          alert("Import fallito: file non valido o corrotto.");
-        }finally{
-          importFile.value = "";
-        }
+          var incoming=JSON.parse(String(reader.result||""));
+          window.AgendaStateValidation.validateState(incoming);
+          var prepared=normalizeLoadedState(clone(incoming));
+          if(!canReplaceData())return;
+          if(!window.confirm("Sostituire l’archivio corrente con questo backup?\n"+describeSnapshot(prepared)+".\nUna copia dell’archivio attuale resterà in Backup locali."))return;
+          saveRecovery("Prima dell’importazione JSON");
+          // I vecchi backup privi di Azioni non cancellano le Azioni correnti.
+          if(prepared.actions == null)prepared.actions=getSnapshot().actions;
+          state=prepared;markLocalDirty();state.updatedAt=new Date().toISOString();
+          persistLocalState();syncNotesUiFromState();refreshActions();renderAll();updateStorageStatus(true);
+          if(isLoggedIn())scheduleRemoteSave(true);
+        }catch(error){window.alert("Importazione non eseguita: "+error.message);}
+        finally{importFile.value="";}
       };
       reader.readAsText(file);
     }
 
     function resetAll(){
-      exportJSON();
-      state = defaultState();
-      try{ persistLocalState(); }catch(e){}
-      syncNotesUiFromState();
-      var now = new Date();
-      currentYear = now.getFullYear();
-      currentMonth = now.getMonth();
-      renderAll();
-      updateStorageStatus(true);
+      if(!canReplaceData())return;
+      if(!window.confirm("Azzerare eventi, note, cose da fare, contatti e Azioni di questo account?\nL’azzeramento verrà sincronizzato nel cloud. Una copia resterà in Backup locali."))return;
+      try{saveRecovery("Prima dell’azzeramento");downloadJSON(getSnapshot(),"agenda-prima-azzeramento");}
+      catch(error){window.alert("Azzeramento annullato: impossibile creare la copia di sicurezza.");return;}
+      state=defaultState();state.actions={dailyGoal:100,items:[]};markLocalDirty();
+      persistLocalState();syncNotesUiFromState();refreshActions();
+      var now=new Date();currentYear=now.getFullYear();currentMonth=now.getMonth();
+      renderAll();updateStorageStatus(true);if(isLoggedIn())scheduleRemoteSave(true);
     }
 
     function renderAll(){
@@ -3356,6 +3433,49 @@ todoActiveList.appendChild(item);
     }
 
     // Wire
+    document.addEventListener("keydown",function(ev){
+      var panel=[$("#recoveryOverlay"),$("#syncConflictOverlay")].find(function(el){return el && el.style.display==="flex";});
+      if(!panel)return;
+      if(ev.key==="Escape"){
+        ev.preventDefault();ev.stopImmediatePropagation();panel.style.display="none";panel.setAttribute("aria-hidden","true");
+        var target=panel.id==="recoveryOverlay"?$("#btnSettings"):btnCloudRefresh;if(target)target.focus();
+      }else if(ev.key==="Tab"){
+        var buttons=Array.prototype.slice.call(panel.querySelectorAll("button:not([disabled])"));
+        var first=buttons[0],last=buttons[buttons.length-1];
+        if(ev.shiftKey && (document.activeElement===first || !panel.contains(document.activeElement))){ev.preventDefault();last.focus();}
+        else if(!ev.shiftKey && (document.activeElement===last || !panel.contains(document.activeElement))){ev.preventDefault();first.focus();}
+      }
+    });
+
+    var syncKeepLocal=$("#syncKeepLocal"),syncUseRemote=$("#syncUseRemote"),syncLater=$("#syncLater");
+    if(syncKeepLocal)syncKeepLocal.addEventListener("click",function(){
+      if(!pendingConflict)return;
+      remoteRevision=pendingConflict.revision;remoteLastKnownUpdatedAt=pendingConflict.remote && pendingConflict.remote.updatedAt;
+      localBaseRevision=remoteRevision;pendingConflict=null;markLocalDirty();persistLocalState();hideSyncConflict();setCloudWriteLock(false);scheduleRemoteSave(true);
+    });
+    if(syncUseRemote)syncUseRemote.addEventListener("click",function(){
+      if(!pendingConflict)return;
+      var choice=pendingConflict;saveRecovery("Modifiche locali prima della scelta cloud");
+      remoteRevision=choice.revision;pendingConflict=null;
+      applyRemoteState(choice.remote||defaultState());hideSyncConflict();setCloudWriteLock(false);setCloudStatus("ok");
+    });
+    if(syncLater)syncLater.addEventListener("click",hideSyncConflict);
+    var btnLocalBackups=$("#btnLocalBackups");
+    if(btnLocalBackups)btnLocalBackups.addEventListener("click",function(){
+      var list=$("#recoveryList");list.textContent="";
+      var generation=sessionGeneration,copies=recoveryCopies();
+      if(!copies.length)list.textContent="Nessuna copia locale disponibile per questo account.";
+      copies.forEach(function(copy){
+        var button=document.createElement("button");button.className="btn";button.type="button";
+        button.textContent=formatCloudDateTime(copy.at)+" · "+copy.reason;
+        button.addEventListener("click",function(){if(sessionIsCurrent(generation))downloadJSON(copy.state,"agenda-recupero");});list.appendChild(button);
+      });
+      $("#recoveryOverlay").style.display="flex";$("#recoveryOverlay").setAttribute("aria-hidden","false");$("#closeRecovery").focus();
+    });
+    if($("#closeRecovery"))$("#closeRecovery").addEventListener("click",function(){
+      $("#recoveryOverlay").style.display="none";$("#recoveryOverlay").setAttribute("aria-hidden","true");if(btnLocalBackups)btnLocalBackups.focus();
+    });
+
     var settingsMenu = $("#settingsMenu");
     var btnSettings = $("#btnSettings");
     var settingsDropdown = $("#settingsDropdown");
@@ -3717,7 +3837,7 @@ function switchStateForCurrentSession(user){
   // Il vecchio archivio comune resta intatto, ma non viene assegnato a un account.
   // Le nuove copie locali usano esclusivamente l'identità del proprietario.
   if(STORAGE_KEY){
-    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(cacheRecord())); }catch(e){}
   }
   sessionGeneration += 1;
   if(saveTimer) clearTimeout(saveTimer);
@@ -3731,8 +3851,14 @@ function switchStateForCurrentSession(user){
   activeAccountKey = accountKeyFor(user);
   STORAGE_KEY = activeAccountKey ? STORAGE_BASE_KEY + ":account:" + encodeURIComponent(activeAccountKey) : null;
   state = loadState();
+  readSyncMetadata();
+  memoryRecovery=[];
+  hideSyncConflict();
+  var recoveryPanel=$("#recoveryOverlay");if(recoveryPanel){recoveryPanel.style.display="none";recoveryPanel.setAttribute("aria-hidden","true");}
   hideAlarmOverlay();
   closeDay();
+  if(dayEventsList)dayEventsList.textContent="";
+  if($("#recoveryList"))$("#recoveryList").textContent="";
   closeContactModal();
   [contactName, contactPhone, contactEmail, contactNotes, todoText, todoTag].forEach(function(el){ if(el) el.value = ""; });
   if(alarmTitle) alarmTitle.textContent = "";
@@ -3747,6 +3873,8 @@ function switchStateForCurrentSession(user){
 }
 
 window.AgendaApp = {
+  getActionsState: function(){return state.actions ? clone(state.actions) : null;},
+  setActionsState: function(actions){state.actions=clone(actions);touchAndSave();},
   getAccountStorageKey: function(base){
     return activeAccountKey ? base + ":account:" + encodeURIComponent(activeAccountKey) : null;
   },

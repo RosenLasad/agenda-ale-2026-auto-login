@@ -1,4 +1,5 @@
 import { getStore } from "@netlify/blobs";
+import { readAccount } from "../lib/state-store.mjs";
 
 const STORE_NAME = "agenda-ale";
 const DEFAULT_TIME_ZONE = "Europe/Rome";
@@ -182,12 +183,17 @@ async function loadLatestAgendaState() {
     return { state: null, key: null, meta };
   }
 
+  const legacyId = /^state-v1-([a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12})$/i.exec(key);
+  if(legacyId){
+    const current=await readAccount(store,legacyId[1],false);
+    if(current.data)return {state:current.data.state,key:current.key,meta};
+  }
   const state = await store.get(key, {
     type: "json",
     consistency: "strong"
   });
 
-  return { state: state || null, key, meta };
+  return { state: state?.ownerId ? state.state : (state || null), key, meta };
 }
 
 export default async (req) => {

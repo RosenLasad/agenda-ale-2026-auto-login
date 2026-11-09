@@ -21,3 +21,6 @@
   from = "/api/push-test"
   to = "/.netlify/functions/push-test"
   status = 200
+
+[functions]
+  node_bundler = "esbuild"

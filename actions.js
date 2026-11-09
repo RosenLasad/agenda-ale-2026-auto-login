@@ -30,15 +30,15 @@
   }
   function load(){
     var data={dailyGoal:100,items:[]};
-    try{ var key=storageKey(); data=JSON.parse(key ? (localStorage.getItem(key)||"null") : "null")||data; }catch(e){}
+    try{ var shared=window.AgendaApp && window.AgendaApp.getActionsState();var key=storageKey();data=shared || JSON.parse(key ? (localStorage.getItem(key)||"null") : "null") || data; }catch(e){}
     data.dailyGoal=Math.max(1,parseInt(data.dailyGoal,10)||100);
     data.items=Array.isArray(data.items)?data.items.map(norm):[];
     var ids={}; data.items.forEach(function(a){ids[a.id]=true;});
-    DEFAULT_ACTIONS.forEach(function(a){ if(!ids[a.id]) data.items.push(norm(a)); });
+    if(!shared) DEFAULT_ACTIONS.forEach(function(a){ if(!ids[a.id]) data.items.push(norm(a)); });
     return data;
   }
   var state=load(), editingId=null, fired={};
-  function save(){ var key=storageKey(); if(key) localStorage.setItem(key, JSON.stringify(state)); }
+  function save(){var key=storageKey();if(key)localStorage.setItem(key,JSON.stringify(state));if(window.AgendaApp)window.AgendaApp.setActionsState(state);}
   function doneToday(a,iso){ return (a.completions||[]).indexOf(iso)>=0; }
   function due(a,iso){ if(a.archived) return false; if(a.cadence==="daily") return !doneToday(a,iso); if(!a.lastCompleted) return true; return daysBetween(a.lastCompleted,iso) >= (a.cadence==="monthly"?30:7); }
   function label(c){ return c==="weekly"?"Settimanale":(c==="monthly"?"Mensile":"Quotidiana"); }
@@ -66,7 +66,7 @@
       var d=doneToday(a,iso), ready=due(a,iso), div=document.createElement("div");
       div.className="item actionItem"+(d?" actionItem--done":"")+(ready?"":" actionItem--waiting");
       var last=a.lastCompleted?" · ultima: "+a.lastCompleted:"", rem=a.reminderTime?" · promemoria "+a.reminderTime:"";
-      div.innerHTML='<div class="itemMain"><input class="checkbox actionCheck" type="checkbox" '+(d?'checked':'')+'><div class="itemText"><p class="t">'+esc(a.name)+'</p><p class="s"><span class="badge '+a.cadence+'">'+label(a.cadence)+'</span> <span class="badge">'+a.points+' pt</span> '+(a.duration?'<span class="badge">'+esc(a.duration)+'</span>':'')+'<br>'+(ready?'Disponibile ora':'Non ancora in scadenza')+last+rem+'</p></div></div><div class="itemActions"><button class="smallBtn editAction" type="button">Modifica</button><button class="smallBtn danger archiveAction" type="button">Archivia</button></div>';
+      div.innerHTML='<div class="itemMain"><input class="checkbox actionCheck" type="checkbox" '+(d?'checked':'')+'><div class="itemText"><p class="t">'+esc(a.name)+'</p><p class="s"><span class="badge '+a.cadence+'">'+label(a.cadence)+'</span> <span class="badge">'+a.points+' pt</span> '+(a.duration?'<span class="badge">'+esc(a.duration)+'</span>':'')+'<br>'+(ready?'Disponibile ora':'Non ancora in scadenza')+esc(last)+esc(rem)+'</p></div></div><div class="itemActions"><button class="smallBtn editAction" type="button">Modifica</button><button class="smallBtn danger archiveAction" type="button">Archivia</button></div>';
       div.querySelector('.actionCheck').addEventListener('change',function(ev){ complete(a.id,ev.target.checked); });
       div.querySelector('.editAction').addEventListener('click',function(){ openEditor(a.id); });
       div.querySelector('.archiveAction').addEventListener('click',function(){ a.archived=true; save(); render(); });
@@ -86,6 +86,8 @@
     if($("#actionsReminderText")) $("#actionsReminderText").textContent="";
     render();
   });
+  window.AgendaActions={exportState:function(){return JSON.parse(JSON.stringify(state));},hasStoredData:function(){var key=storageKey();return !!(key && localStorage.getItem(key));}};
+  window.addEventListener("agenda-data-changed",function(){state=load();editingId=null;fired={};render();});
   document.addEventListener("DOMContentLoaded",function(){
     $all('.tab').forEach(function(t){ t.addEventListener('click',function(){ if(t.getAttribute('data-view')==='actions') showView('actions'); else $('#view-actions') && $('#view-actions').classList.add('hidden'); }); });
     if($("#actionsFilter")) $("#actionsFilter").addEventListener("change",render);

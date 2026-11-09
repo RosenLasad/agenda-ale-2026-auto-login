@@ -3997,3 +3997,10 @@ button.cloudSyncStatus:focus-visible{ outline:2px solid currentColor; outline-of
   .brandTitle{ font-size:24px; }
   .todayLine{ font-size:20px; }
 }
+
+.safetyOverlay{ z-index:120; }
+.safetyModal{ width:min(560px, 94vw); }
+.safetyBody{ display:flex; flex-direction:column; gap:12px; }
+.safetyBody p{ margin:0; line-height:1.5; }
+.safetyBody .btn,.recoveryList .btn{ white-space:normal; line-height:1.4; text-align:left; }
+.recoveryList{ display:flex; flex-direction:column; gap:8px; }

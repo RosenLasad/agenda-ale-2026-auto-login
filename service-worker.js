@@ -1,10 +1,11 @@
-const CACHE_NAME = "agenda-shell-v33";
+const CACHE_NAME = "agenda-shell-v34";
 
 const APP_SHELL = [
   "./",
   "./index.html",
   "./style.css",
   "./app.js",
+  "./state-validation.js",
   "./actions.js",
   "./account.js",
   "./oggi/today-data-core.js",
@@ -32,6 +33,7 @@ const NETWORK_FIRST_PATHS = new Set([
   "/",
   "/index.html",
   "/app.js",
+  "/state-validation.js",
   "/style.css",
   "/manifest.webmanifest"
 ]);

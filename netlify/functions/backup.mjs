@@ -1,29 +1,20 @@
 import { getStore } from "@netlify/blobs";
-
-export default async (req) => {
-  const store = getStore({ name: "agenda-ale", consistency: "strong" });
-
-  // Leggo quale chiave contiene lo "stato principale"
-  const meta = await store.get("owner-meta", { type: "json" });
-  const stateKey = meta?.key;
-  if (!stateKey) return;
-
-  const state = await store.get(stateKey, { type: "json" });
-  if (!state) return;
-
-  // Nome backup: data UTC (semplice e non ambiguo)
-  const d = new Date();
-  const ymd = d.toISOString().slice(0, 10); // YYYY-MM-DD
-  const backupKey = `backups/${ymd}.json`;
-
-  await store.setJSON(backupKey, {
-    backedUpAtUTC: d.toISOString(),
-    stateKey,
-    state
-  });
+import { strong, digest, checkedSetJSON } from "../lib/state-store.mjs";
+export default async ()=>{
+  const store=getStore("agenda-ale"),now=new Date().toISOString(),day=now.slice(0,10);
+  let count=0;
+  // Una copia per ciascun account, più archivi precedenti non ancora migrati.
+  for(const prefix of ["accounts-v2/","state-v1-"]){
+    for await(const page of store.list({prefix,paginate:true})){
+      for(const blob of page.blobs){
+        if(prefix==="accounts-v2/" && !/^accounts-v2\/[^/]+\/state$/.test(blob.key))continue;
+        const data=await store.get(blob.key,strong);
+        if(!data)continue;
+        const snapshot=`backups-v2/${day}/${digest(blob.key)}`;
+        await checkedSetJSON(store,snapshot,{backedUpAtUTC:now,stateKey:blob.key,data},{onlyIfNew:true});count++;
+      }
+    }
+  }
+  console.log("Backup giornaliero completato",{count});
 };
-
-// Eseguita in timezone UTC (cron in UTC) :contentReference[oaicite:1]{index=1}
-export const config = {
-  schedule: "@daily"
-};
+export const config={schedule:"@daily"};
