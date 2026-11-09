@@ -25,9 +25,12 @@
   function esc(str){ return String(str||"").replace(/[&<>"']/g,function(ch){return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[ch]||ch;}); }
   function cadence(raw){ raw=String(raw||"").toLowerCase(); return raw==="weekly" ? "weekly" : (raw==="monthly" ? "monthly" : "daily"); }
   function norm(a){ a=a&&typeof a==="object"?a:{}; return { id:a.id||uid(), name:String(a.name||"").trim(), cadence:cadence(a.cadence), points:Math.max(1,parseInt(a.points,10)||20), duration:String(a.duration||"").trim(), reminderTime:String(a.reminderTime||"").trim(), lastCompleted:a.lastCompleted||null, completions:Array.isArray(a.completions)?a.completions.filter(Boolean):[], archived:!!a.archived }; }
+  function storageKey(){
+    return window.AgendaApp && window.AgendaApp.getAccountStorageKey(STORAGE_KEY);
+  }
   function load(){
     var data={dailyGoal:100,items:[]};
-    try{ data=JSON.parse(localStorage.getItem(STORAGE_KEY)||"null")||data; }catch(e){}
+    try{ var key=storageKey(); data=JSON.parse(key ? (localStorage.getItem(key)||"null") : "null")||data; }catch(e){}
     data.dailyGoal=Math.max(1,parseInt(data.dailyGoal,10)||100);
     data.items=Array.isArray(data.items)?data.items.map(norm):[];
     var ids={}; data.items.forEach(function(a){ids[a.id]=true;});
@@ -35,7 +38,7 @@
     return data;
   }
   var state=load(), editingId=null, fired={};
-  function save(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+  function save(){ var key=storageKey(); if(key) localStorage.setItem(key, JSON.stringify(state)); }
   function doneToday(a,iso){ return (a.completions||[]).indexOf(iso)>=0; }
   function due(a,iso){ if(a.archived) return false; if(a.cadence==="daily") return !doneToday(a,iso); if(!a.lastCompleted) return true; return daysBetween(a.lastCompleted,iso) >= (a.cadence==="monthly"?30:7); }
   function label(c){ return c==="weekly"?"Settimanale":(c==="monthly"?"Mensile":"Quotidiana"); }
@@ -75,6 +78,14 @@
   function saveEditor(){ var name=$("#actionName")?$("#actionName").value.trim():""; if(!name) return; var a=editingId?state.items.find(function(x){return x.id===editingId;}):null; if(!a){a=norm({id:uid()}); state.items.push(a);} a.name=name; a.cadence=cadence($("#actionCadence").value); a.points=Math.max(1,parseInt($("#actionPoints").value,10)||20); a.duration=$("#actionDuration").value.trim(); a.reminderTime=$("#actionReminder").value; editingId=null; var card=$("#actionEditorCard"); if(card) card.classList.add("collapsed"); save(); render(); }
   function resetToday(){ var iso=todayISO(); state.items.forEach(function(a){ if(a.cadence==="daily"){ a.completions=(a.completions||[]).filter(function(x){return x!==iso;}); if(a.lastCompleted===iso) a.lastCompleted=null; } }); save(); render(); }
   function checkReminders(){ var box=$("#actionsReminderCard"), text=$("#actionsReminderText"); if(!box||!text) return; var n=new Date(), iso=todayISO(), hm=pad2(n.getHours())+":"+pad2(n.getMinutes()); var list=state.items.filter(function(a){ var key=iso+"|"+a.id+"|"+hm; return a.reminderTime===hm && due(a,iso) && !fired[key]; }); if(!list.length) return; list.forEach(function(a){fired[iso+"|"+a.id+"|"+hm]=true;}); text.textContent="Promemoria: "+list.map(function(a){return a.name;}).join(", "); box.classList.remove("hidden"); setTimeout(function(){box.classList.add("hidden");},9000); }
+  window.addEventListener("agenda-session-changed",function(){
+    state=load(); editingId=null; fired={};
+    ["actionName","actionDuration","actionReminder"].forEach(function(id){ if($("#"+id)) $("#"+id).value=""; });
+    if($("#actionEditorCard")) $("#actionEditorCard").classList.add("collapsed");
+    if($("#actionsReminderCard")) $("#actionsReminderCard").classList.add("hidden");
+    if($("#actionsReminderText")) $("#actionsReminderText").textContent="";
+    render();
+  });
   document.addEventListener("DOMContentLoaded",function(){
     $all('.tab').forEach(function(t){ t.addEventListener('click',function(){ if(t.getAttribute('data-view')==='actions') showView('actions'); else $('#view-actions') && $('#view-actions').classList.add('hidden'); }); });
     if($("#actionsFilter")) $("#actionsFilter").addEventListener("change",render);

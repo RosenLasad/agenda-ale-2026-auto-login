@@ -2,7 +2,33 @@
     "use strict";
 
     var START_YEAR = 2026;
-    var STORAGE_KEY = "agenda_ale_2026_v1";
+    var STORAGE_BASE_KEY = "agenda_ale_2026_v1";
+    var STORAGE_KEY = null;
+    var activeAccountKey = null;
+    var sessionGeneration = 0;
+    var initialSessionRoutePending = true;
+
+    function accountKeyFor(user){
+      if(!user) return null;
+      if(user.id || user.sub) return "id:" + String(user.id || user.sub);
+      return user.email ? "email:" + String(user.email).trim().toLowerCase() : null;
+    }
+
+    function currentIdentityAccountKey(){
+      try{ return accountKeyFor(window.netlifyIdentity && window.netlifyIdentity.currentUser()); }
+      catch(e){ return null; }
+    }
+
+    function sessionIsCurrent(generation){
+      return generation === sessionGeneration && activeAccountKey === currentIdentityAccountKey();
+    }
+
+    function persistLocalState(){
+      if(STORAGE_KEY && sessionIsCurrent(sessionGeneration)){
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      }
+    }
+
 
     var MONTHS_IT = ["Gennaio","Febbraio","Marzo","Aprile","Maggio","Giugno","Luglio","Agosto","Settembre","Ottobre","Novembre","Dicembre"];
     var DOW_IT = ["Lun","Mar","Mer","Gio","Ven","Sab","Dom"];
@@ -341,6 +367,7 @@
 
     function loadState(){
       try{
+        if(!STORAGE_KEY) return defaultState();
         var raw = localStorage.getItem(STORAGE_KEY);
         if(!raw) return defaultState();
         var obj = JSON.parse(raw);
@@ -378,7 +405,7 @@
 
     function isLoggedIn(){
       try{
-        return !!(window.netlifyIdentity && window.netlifyIdentity.currentUser && window.netlifyIdentity.currentUser());
+        return !!activeAccountKey && activeAccountKey === currentIdentityAccountKey();
       }catch(e){
         return false;
       }
@@ -493,15 +520,23 @@
 
     async function fetchCloudWithAuth(url, options){
       options = options || {};
+      var generation = sessionGeneration;
+      function checkSession(){
+        if(!activeAccountKey || !sessionIsCurrent(generation)) throw new Error("Sessione cambiata: richiesta annullata");
+      }
+      checkSession();
       var baseHeaders = options.headers || {};
       var authHeaders = await getCloudAuthHeaders(false);
+      checkSession();
       var firstOptions = Object.assign({}, options, {
         headers: Object.assign({}, baseHeaders, authHeaders)
       });
       var res = await fetch(url, firstOptions);
 
+      checkSession();
       if(res.status === 401){
         var freshHeaders = await getCloudAuthHeaders(true);
+        checkSession();
         if(freshHeaders && freshHeaders.Authorization){
           var retryOptions = Object.assign({}, options, {
             headers: Object.assign({}, baseHeaders, freshHeaders)
@@ -510,6 +545,7 @@
         }
       }
 
+      checkSession();
       return res;
     }
 
@@ -583,7 +619,7 @@
       if(!remote || typeof remote !== "object") return false;
       state = normalizeLoadedState(remote);
       remoteLastKnownUpdatedAt = state.updatedAt || remoteLastKnownUpdatedAt;
-      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+      try{ persistLocalState(); }catch(e){}
       syncNotesUiFromState();
       renderAll();
       updateStorageStatus(true);
@@ -601,12 +637,14 @@
         return;
       }
 
+      var generation = sessionGeneration;
       if(mandatory) setCloudWriteLock(true);
       remoteSyncInFlight = true;
       setCloudStatus(mandatory ? "locked" : "syncing");
 
       try{
         var envelope = await loadRemoteEnvelope();
+        if(!sessionIsCurrent(generation)) return;
         if(envelope && envelope.unauthorized){
           setCloudWriteLock(false);
           setCloudStatus("idle", "\u2601\uFE0F Cloud: accesso richiesto");
@@ -624,12 +662,14 @@
           if(forcePull || remoteStamp > localStamp){
             applyRemoteState(remote);
           }
+          finishInitialSessionRoute();
           setCloudWriteLock(false);
           setCloudStatus("ok");
           return;
         }
 
         remoteLastKnownUpdatedAt = null;
+        finishInitialSessionRoute();
         if(hasLocalData(state)){
           setCloudStatus("syncing", "\uD83D\uDD04 Cloud: primo salvataggio in corso...");
           scheduleRemoteSave(true, true);
@@ -638,6 +678,7 @@
         }
         setCloudWriteLock(false);
       }catch(e){
+        if(!sessionIsCurrent(generation)) return;
         console.warn("Sync cloud fallita:", e);
         if(mandatory){
           setCloudWriteLock(true);
@@ -646,7 +687,7 @@
           setCloudStatus("error");
         }
       }finally{
-        remoteSyncInFlight = false;
+        if(sessionIsCurrent(generation)) remoteSyncInFlight = false;
       }
     }
 
@@ -657,12 +698,16 @@
         return;
       }
       if(remoteSaveTimer) clearTimeout(remoteSaveTimer);
+      var generation = sessionGeneration;
       remoteSaveTimer = setTimeout(function(){
+        remoteSaveTimer = null;
+        if(!sessionIsCurrent(generation) || !isLoggedIn()) return;
         var payload = normalizeLoadedState(JSON.parse(JSON.stringify(state)));
         payload.updatedAt = new Date().toISOString();
         state.updatedAt = payload.updatedAt;
         setCloudStatus("syncing", "\uD83D\uDD04 Cloud: salvataggio in corso...");
         saveRemoteState(payload).then(function(result){
+          if(!sessionIsCurrent(generation)) return;
           if(result && result.unauthorized){
             setCloudStatus("idle", "\u2601\uFE0F Cloud: accesso richiesto");
             promptCloudLogin("La sessione cloud è scaduta. Accedi di nuovo per salvare nel cloud.");
@@ -672,10 +717,11 @@
           state.updatedAt = savedAt;
           remoteLastKnownUpdatedAt = savedAt;
           remoteLastCheckedAt = new Date().toISOString();
-          try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+          try{ persistLocalState(); }catch(e){}
           updateStorageStatus(true);
           setCloudStatus("ok");
         }).catch(function(e){
+          if(!sessionIsCurrent(generation)) return;
           console.warn("Salvataggio cloud fallito:", e);
           if(e && e.conflict){
             if(e.remoteUpdatedAt) remoteLastKnownUpdatedAt = e.remoteUpdatedAt;
@@ -1706,6 +1752,13 @@ resetEventForm();
       }, 120);
     }
 
+    function finishInitialSessionRoute(){
+      if(!initialSessionRoutePending) return;
+      initialSessionRoutePending = false;
+      var route = getInitialAgendaRoute();
+      if(route.date || route.panel) applyInitialAgendaRoute();
+    }
+
     function applyInitialAgendaRoute(){
       var route = getInitialAgendaRoute();
       setView(route.view);
@@ -2057,9 +2110,12 @@ if(openTodosBtn){
       }
       state.updatedAt = new Date().toISOString();
       if(saveTimer) clearTimeout(saveTimer);
+      var generation = sessionGeneration;
       saveTimer = setTimeout(function(){
+        saveTimer = null;
+        if(!sessionIsCurrent(generation)) return;
         try{
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          persistLocalState();
           updateStorageStatus(true);
           // se loggato, salva anche online (debounce separato)
           if(isLoggedIn()) scheduleRemoteSave();
@@ -2072,7 +2128,7 @@ if(openTodosBtn){
     function updateStorageStatus(ok){
       if(!storageStatus) return;
       try{
-        var raw = localStorage.getItem(STORAGE_KEY) || "";
+        var raw = STORAGE_KEY ? (localStorage.getItem(STORAGE_KEY) || "") : "";
         var size = raw.length;
         storageStatus.textContent = (ok !== false ? "ok" : "errore") + " · " + Math.round(size/1024) + " KB";
       }catch(e){
@@ -3251,8 +3307,10 @@ todoActiveList.appendChild(item);
       var file = e.target.files && e.target.files[0];
       if(!file) return;
 
+      var generation = sessionGeneration;
       var reader = new FileReader();
       reader.onload = function(){
+        if(!sessionIsCurrent(generation)){ importFile.value = ""; return; }
         try{
           var obj = JSON.parse(String(reader.result || ""));
           if(!obj || typeof obj !== "object") throw new Error("invalid");
@@ -3260,7 +3318,7 @@ todoActiveList.appendChild(item);
           state = normalizeLoadedState(obj);
           state.updatedAt = new Date().toISOString();
 
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+          persistLocalState();
           syncNotesUiFromState();
 
           renderAll();
@@ -3279,7 +3337,7 @@ todoActiveList.appendChild(item);
     function resetAll(){
       exportJSON();
       state = defaultState();
-      try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
+      try{ persistLocalState(); }catch(e){}
       syncNotesUiFromState();
       var now = new Date();
       currentYear = now.getFullYear();
@@ -3619,20 +3677,45 @@ if("serviceWorker" in navigator){
   });
 }
 
-function switchStateForCurrentSession(){
-  try{
-    state = loadState();
-    syncNotesUiFromState();
-    renderAll();
-    updateStorageStatus(true);
-  }catch(e){
-    console.warn("Cambio sessione non riuscito:", e);
+function switchStateForCurrentSession(user){
+  // Il vecchio archivio comune resta intatto, ma non viene assegnato a un account.
+  // Le nuove copie locali usano esclusivamente l'identità del proprietario.
+  if(STORAGE_KEY){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }catch(e){}
   }
+  sessionGeneration += 1;
+  if(saveTimer) clearTimeout(saveTimer);
+  if(remoteSaveTimer) clearTimeout(remoteSaveTimer);
+  if(remotePullTimer) clearTimeout(remotePullTimer);
+  saveTimer = remoteSaveTimer = remotePullTimer = null;
+  stopRemotePolling();
+  remoteSyncInFlight = false;
+  remoteLastKnownUpdatedAt = null;
+  remoteLastCheckedAt = null;
+  activeAccountKey = accountKeyFor(user);
+  STORAGE_KEY = activeAccountKey ? STORAGE_BASE_KEY + ":account:" + encodeURIComponent(activeAccountKey) : null;
+  state = loadState();
+  hideAlarmOverlay();
+  closeDay();
+  closeContactModal();
+  [contactName, contactPhone, contactEmail, contactNotes, todoText, todoTag].forEach(function(el){ if(el) el.value = ""; });
+  if(alarmTitle) alarmTitle.textContent = "";
+  if(alarmMeta) alarmMeta.textContent = "";
+  if(alarmNotes) alarmNotes.textContent = "";
+  if(cloudStatusDetails) cloudStatusDetails.hidden = true;
+  if(cloudSyncStatus) cloudSyncStatus.setAttribute("aria-expanded", "false");
+  syncNotesUiFromState();
+  renderAll();
+  updateStorageStatus(true);
+  window.dispatchEvent(new CustomEvent("agenda-session-changed"));
 }
 
 window.AgendaApp = {
+  getAccountStorageKey: function(base){
+    return activeAccountKey ? base + ":account:" + encodeURIComponent(activeAccountKey) : null;
+  },
   onIdentityInit: function(user){
-    switchStateForCurrentSession();
+    switchStateForCurrentSession(user);
     if(user){
       startRemotePolling();
       beginMandatoryCloudRefresh();
@@ -3645,19 +3728,25 @@ window.AgendaApp = {
   },
   onIdentityLogin: function(user){
     remoteLoginPrompted = false;
-    switchStateForCurrentSession();
+    switchStateForCurrentSession(user);
     startRemotePolling();
     beginMandatoryCloudRefresh();
     syncExistingPushSubscription();
   },
   onIdentityBeforeLogout: function(){
+    if(saveTimer) clearTimeout(saveTimer);
+    if(remoteSaveTimer) clearTimeout(remoteSaveTimer);
+    if(remotePullTimer) clearTimeout(remotePullTimer);
+    saveTimer = remoteSaveTimer = remotePullTimer = null;
+    stopRemotePolling();
     return disablePushNotifications();
   },
   onIdentityLogout: function(){
+    initialSessionRoutePending = false;
     remoteLoginPrompted = false;
     stopRemotePolling();
     setCloudWriteLock(false);
-    switchStateForCurrentSession();
+    switchStateForCurrentSession(null);
     setCloudStatus("idle", "☁️ Cloud: non attivo");
     refreshPushNotificationStatus();
   },
