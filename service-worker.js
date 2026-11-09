@@ -1,4 +1,4 @@
-const CACHE_NAME = "agenda-shell-v29";
+const CACHE_NAME = "agenda-shell-v30";
 
 const APP_SHELL = [
   "./",
@@ -22,6 +22,7 @@ const APP_SHELL = [
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
+  "./icons/notification-badge.png",
   "./icons/icon-512.png",
   "./icons/icon-maskable-512.png",
   "./icons/apple-touch-icon.png"
@@ -120,7 +121,7 @@ self.addEventListener("push", (event) => {
   const options = {
     body: data.body || "È arrivato il momento del tuo evento.",
     icon: "/icons/icon-192.png",
-    badge: "/icons/icon-192.png",
+    badge: "/icons/notification-badge.png",
     tag: data.tag || "digenda-event-alarm",
     renotify: true,
     requireInteraction: true,
