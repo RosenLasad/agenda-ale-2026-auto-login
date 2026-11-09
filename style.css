@@ -3886,3 +3886,63 @@ button.todayLine:focus-visible{
   outline: 2px solid currentColor;
   outline-offset: 4px;
 }
+
+/* Stato cloud compatto, con dettagli disponibili anche al tocco. */
+.cloudStatusWrap{ position:relative; align-self:flex-end; max-width:100%; }
+button.cloudSyncStatus{
+  appearance:none;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+  min-height:28px;
+  max-width:100%;
+  margin:0;
+  padding:5px 9px;
+  border:1px solid rgba(226,205,171,.25);
+  border-radius:999px;
+  background:rgba(18,16,18,.28);
+  font-family:inherit;
+  font-size:11px;
+  line-height:1.2;
+  white-space:nowrap;
+  cursor:pointer;
+}
+.cloudStatusIcon{ flex:0 0 auto; font-size:13px; line-height:1; }
+.cloudStatusText{ overflow:hidden; text-overflow:ellipsis; font-weight:600; }
+.cloudStatusMeta{ flex:0 0 auto; opacity:.86; font-variant-numeric:tabular-nums; }
+button.cloudSyncStatus[data-state="ok"]{ border-color:rgba(91,189,129,.4); background:rgba(49,114,74,.18); }
+button.cloudSyncStatus[data-state="syncing"],
+button.cloudSyncStatus[data-state="pending"],
+button.cloudSyncStatus[data-state="locked"]{ color:#ffe2a3; border-color:rgba(224,173,82,.4); background:rgba(122,89,29,.18); }
+button.cloudSyncStatus[data-state="conflict"],
+button.cloudSyncStatus[data-state="error"]{ border-color:rgba(230,102,111,.4); background:rgba(125,45,51,.18); }
+button.cloudSyncStatus:focus-visible{ outline:2px solid currentColor; outline-offset:3px; }
+.cloudStatusDetails{
+  position:absolute;
+  top:calc(100% + 8px);
+  right:0;
+  z-index:100;
+  box-sizing:border-box;
+  width:min(320px, calc(100vw - 40px));
+  padding:12px 14px;
+  border:1px solid rgba(226,205,171,.4);
+  border-radius:12px;
+  background:#272329;
+  color:#fbf3e2;
+  box-shadow:0 8px 24px rgba(0,0,0,.3);
+  font-size:12px;
+  line-height:1.6;
+  text-align:left;
+  white-space:pre-line;
+  overflow-wrap:anywhere;
+}
+.cloudStatusDetails[hidden]{ display:none; }
+:root[data-theme="light"] .cloudStatusDetails{ background:#fff9ef; color:#45372d; }
+:root[data-theme="light"] button.cloudSyncStatus[data-state="locked"]{ color:#8a6630; }
+@media (max-width:760px){
+  button.cloudSyncStatus .cloudStatusText{ display:none; }
+  button.cloudSyncStatus{ min-height:32px; padding:6px 9px; gap:4px; }
+}
+/* Lascia uscire il riquadro dei dettagli dai bordi della testata. */
+.wrap > header{ overflow:visible; z-index:6; }
+.wrap > header::before{ border-radius:inherit; }

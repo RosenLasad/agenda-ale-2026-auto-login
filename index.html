@@ -39,7 +39,16 @@
             <button class="btn iconBtn" id="btnCloudRefresh" type="button" title="Scarica subito l'ultima versione dal cloud" aria-label="Scarica dal cloud"><span class="ico">☁️</span></button>
             <button class="btn" id="loginBtn">Login</button>
           </div>
-          <div class="cloudSyncStatus" id="cloudSyncStatus" role="status" aria-live="polite">☁️ Cloud: non verificato</div>
+          <div class="cloudStatusWrap">
+            <div role="status" aria-live="polite">
+              <button class="cloudSyncStatus" id="cloudSyncStatus" type="button" data-state="idle" aria-expanded="false" aria-controls="cloudStatusDetails" aria-label="Cloud non verificato. Mostra dettagli" title="Cloud non verificato">
+                <span class="cloudStatusIcon" aria-hidden="true">☁️</span>
+                <span class="cloudStatusText">Non verificato</span>
+                <span class="cloudStatusMeta" aria-hidden="true"></span>
+              </button>
+            </div>
+            <div class="cloudStatusDetails" id="cloudStatusDetails" role="region" aria-label="Dettagli sincronizzazione cloud" hidden>Cloud non verificato.</div>
+          </div>
         </div>
       </div>
 

@@ -423,26 +423,54 @@
     function setCloudStatus(kind, message){
       kind = kind || "idle";
       if(cloudSyncStatus){
-        cloudSyncStatus.setAttribute("data-state", kind);
-        if(message){
-          cloudSyncStatus.textContent = message;
-        }else if(!isLoggedIn()){
-          cloudSyncStatus.textContent = "\u2601\uFE0F Cloud: non attivo";
+        var loggedIn = isLoggedIn();
+        var icon = "☁️";
+        var text = "Non verificato";
+        var detail = "Cloud non verificato.";
+        var moment = Date.now();
+        if(!loggedIn){
+          text = "Cloud non attivo";
+          detail = "Cloud non attivo. Accedi per sincronizzare Agenda.";
         }else if(kind === "ok"){
-          cloudSyncStatus.textContent = "☁️ Cloud aggiornato: " + formatCloudDateTime(remoteLastCheckedAt) + "\nUltima modifica: " + formatCloudDateTime(remoteLastKnownUpdatedAt || (state && state.updatedAt));
+          icon = "✅";
+          text = "Aggiornato";
+          detail = "Cloud aggiornato.";
+          moment = remoteLastCheckedAt;
         }else if(kind === "syncing"){
-          cloudSyncStatus.textContent = "\uD83D\uDD04 Cloud: aggiornamento in corso...";
+          icon = "🔄";
+          text = "Sincronizzazione";
+          detail = "Aggiornamento cloud in corso.";
         }else if(kind === "pending"){
-          cloudSyncStatus.textContent = "\u2601\uFE0F Cloud: controllo necessario prima delle modifiche";
+          icon = "⌛";
+          text = "Controllo richiesto";
+          detail = "Controllo cloud necessario prima delle modifiche.";
         }else if(kind === "locked"){
-          cloudSyncStatus.textContent = "\uD83D\uDD04 Cloud: aggiorno i dati prima di permettere modifiche";
+          icon = "🔄";
+          text = "Verifica cloud";
+          detail = "Aggiorno i dati prima di permettere modifiche.";
         }else if(kind === "conflict"){
-          cloudSyncStatus.textContent = "\u26A0\uFE0F Cloud: modifiche piu recenti da un altro dispositivo";
+          icon = "⚠️";
+          text = "Conflitto cloud";
+          detail = "Nel cloud ci sono modifiche più recenti da un altro dispositivo.";
         }else if(kind === "error"){
-          cloudSyncStatus.textContent = "\u26A0\uFE0F Cloud: aggiornamento non riuscito";
-        }else{
-          cloudSyncStatus.textContent = "\u2601\uFE0F Cloud: non verificato";
+          icon = "✕";
+          text = "Errore cloud";
+          detail = "Aggiornamento cloud non riuscito.";
         }
+        detail = message || detail;
+        if(loggedIn){
+          detail += "\nUltimo controllo cloud: " + formatCloudDateTime(remoteLastCheckedAt);
+          detail += "\nUltima modifica: " + formatCloudDateTime(remoteLastKnownUpdatedAt || (state && state.updatedAt));
+        }
+        var date = moment ? new Date(moment) : null;
+        var time = date && !isNaN(date.getTime()) ? new Intl.DateTimeFormat("it-IT", { hour:"2-digit", minute:"2-digit" }).format(date) : "";
+        cloudSyncStatus.setAttribute("data-state", loggedIn ? kind : "idle");
+        cloudSyncStatus.querySelector(".cloudStatusIcon").textContent = icon;
+        cloudSyncStatus.querySelector(".cloudStatusText").textContent = text;
+        cloudSyncStatus.querySelector(".cloudStatusMeta").textContent = time ? "· " + time : "";
+        cloudSyncStatus.title = detail;
+        cloudSyncStatus.setAttribute("aria-label", detail + " Mostra o nascondi dettagli.");
+        if(cloudStatusDetails) cloudStatusDetails.textContent = detail;
       }
       setCloudButtonState(kind);
     }
@@ -722,6 +750,7 @@
 
     var storageStatus = $("#storageStatus");
     var cloudSyncStatus = $("#cloudSyncStatus");
+    var cloudStatusDetails = $("#cloudStatusDetails");
     var btnCloudRefresh = $("#btnCloudRefresh");
     var favoriteNotesCard = $("#favoriteNotesCard");
     var favoriteNotesPreviewList = $("#favoriteNotesPreviewList");
@@ -3269,6 +3298,26 @@ todoActiveList.appendChild(item);
     }
 
     // Wire
+    if(cloudSyncStatus && cloudStatusDetails){
+      function closeCloudDetails(){
+        cloudStatusDetails.hidden = true;
+        cloudSyncStatus.setAttribute("aria-expanded", "false");
+      }
+      cloudSyncStatus.addEventListener("click", function(){
+        cloudStatusDetails.hidden = !cloudStatusDetails.hidden;
+        cloudSyncStatus.setAttribute("aria-expanded", String(!cloudStatusDetails.hidden));
+      });
+      document.addEventListener("click", function(ev){
+        if(!cloudSyncStatus.contains(ev.target) && !cloudStatusDetails.contains(ev.target)) closeCloudDetails();
+      });
+      document.addEventListener("keydown", function(ev){
+        if(ev.key === "Escape" && !cloudStatusDetails.hidden){
+          closeCloudDetails();
+          cloudSyncStatus.focus();
+        }
+      });
+    }
+
     if(todayLine){
       todayLine.addEventListener("click", function(){
         todayViewOffset = 0;
