@@ -3987,3 +3987,13 @@ button.cloudSyncStatus:focus-visible{ outline:2px solid currentColor; outline-of
   .cloudStatusRow{ gap:5px; }
   .settingsToggle .ico{ font-size:21px; }
 }
+
+/* Dimensioni di titolo e data sugli schermi stretti. */
+@media (min-width:421px) and (max-width:640px){
+  .brandTitle{ font-size:28px; }
+  .todayLine{ font-size:22px; }
+}
+@media (max-width:420px){
+  .brandTitle{ font-size:24px; }
+  .todayLine{ font-size:20px; }
+}
